@@ -22,6 +22,7 @@ class BankDetails(BaseModel):
 
 class InvoiceForm(BaseModel):
     invoice_date: date
+    due_date: date  # Add this line
     customer_info: CustomerInfo
     company_info: CompanyInfo
     bank_details: BankDetails

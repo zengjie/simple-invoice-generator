@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, StreamingResponse
 from fasthx import Jinja
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from gen_invoice import generate_invoice
 from models import BankDetails, InvoiceForm, Invoice, CompanyInfo, CustomerInfo, InvoiceItem
@@ -23,6 +23,7 @@ jinja = Jinja(templates)
 async def get_invoice(
     customer_name: str = Form(...),
     invoice_date: str = Form(...),
+    due_date: str = Form(...),  # Add this line
     address_line1: str = Form(...),
     address_line2: str = Form(None),
     city_country: str = Form(...),
@@ -37,6 +38,7 @@ async def get_invoice(
 ) -> Invoice:
     form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
+        due_date=datetime.strptime(due_date, "%Y-%m-%d").date(),  # Add this line
         customer_info=CustomerInfo(
             name=customer_name,
             address_line1=address_line1,
