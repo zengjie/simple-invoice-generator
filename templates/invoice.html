@@ -39,16 +39,16 @@
                 <tbody>
                     {% for item in invoice.items %}
                     <tr class="border-b border-gray-200">
-                        <td class="py-2 px-4">{{ item.description }}</td>
-                        <td class="py-2 px-4 text-right">${{ item.amount | round(2) }}</td>
-                        <td class="py-2 px-4">{{ item.comment }}</td>
+                        <td class="py-2 px-4">{{ item.item }}</td>
+                        <td class="py-2 px-4 text-right">${{ "%.2f"|format(item.amount) }}</td>
+                        <td class="py-2 px-4">{{ item.comments }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             
             <div class="text-right mb-6">
-                <p class="text-xl font-bold">TOTAL DUE: ${{ invoice.total | round(2) }}</p>
+                <p class="text-xl font-bold">TOTAL DUE: ${{ "%.2f"|format(invoice.total) }}</p>
             </div>
 
             <div class="mb-6">
@@ -57,6 +57,7 @@
                 <p><strong>SWIFT Code:</strong> {{ invoice.form_data.bank_details.swift_code }}</p>
                 <p><strong>Beneficiary's Name:</strong> {{ invoice.form_data.bank_details.beneficiary_name }}</p>
                 <p><strong>Beneficiary's A/C No.:</strong> {{ invoice.form_data.bank_details.account_number }}</p>
+                <p><strong>Bank Address:</strong> {{ invoice.form_data.bank_details.bank_address }}</p>
             </div>
         </div>
     </div>
@@ -72,20 +73,8 @@
 
 <script>
 document.getElementById('download-button').addEventListener('click', function() {
-    const form = new FormData();
-    form.append('customer_name', '{{ invoice.form_data.customer_info.name }}');
-    form.append('invoice_date', '{{ invoice.form_data.invoice_date }}');
-    form.append('address_line1', '{{ invoice.form_data.customer_info.address_line1 }}');
-    form.append('address_line2', '{{ invoice.form_data.customer_info.address_line2 }}');
-    form.append('city_country', '{{ invoice.form_data.customer_info.city_country }}');
-    form.append('company_name', '{{ invoice.form_data.company_info.name }}');
-    form.append('company_tagline', '{{ invoice.form_data.company_info.tagline }}');
-    form.append('company_address', '{{ invoice.form_data.company_info.address }}');
-    form.append('bank_name', '{{ invoice.form_data.bank_details.beneficiary_bank }}');
-    form.append('swift_code', '{{ invoice.form_data.bank_details.swift_code }}');
-    form.append('account_number', '{{ invoice.form_data.bank_details.account_number }}');
-    form.append('bank_address', '{{ invoice.form_data.bank_details.bank_address }}');
-
+    const form = new FormData(document.getElementById('invoice-form'));
+    
     fetch('/download-invoice', {
         method: 'POST',
         body: form

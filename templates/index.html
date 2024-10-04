@@ -30,6 +30,9 @@
                 <input type="hidden" name="account_number" id="account_number" value="1234567890">
                 <input type="hidden" name="bank_address" id="bank_address" value="123 Finance Street, New York, NY 10001, USA">
 
+                <!-- Invoice Items -->
+                <input type="hidden" name="items" id="invoice_items" value='[]'>
+
                 <!-- Edit Sections -->
                 <div class="mb-6 space-y-4">
                     <!-- Customer Section -->
@@ -67,13 +70,26 @@
                         </div>
                         <p id="bank-summary" class="text-sm"></p>
                     </div>
+
+                    <!-- Invoice Items Section -->
+                    <div class="border p-4 rounded-md">
+                        <div class="flex justify-between items-center mb-2">
+                            <h2 class="text-lg font-semibold">Invoice Items</h2>
+                        </div>
+                        <div id="invoice-items-container">
+                            <!-- Invoice items will be dynamically added here -->
+                        </div>
+                        <button type="button" class="mt-2 px-3 py-1 bg-green-500 text-white text-sm font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300"
+                                onclick="addInvoiceItem()">
+                            Add Item
+                        </button>
+                    </div>
                 </div>
 
                 <div class="mb-4">
                     <label for="invoice_date" class="block mb-2">Invoice Date:</label>
                     <input type="date" id="invoice_date" name="invoice_date" required class="w-full px-3 py-2 border rounded">
                 </div>
-                <!-- Add more invoice-specific fields here -->
             </form>
         </div>
 
@@ -92,10 +108,13 @@
     </div>
 
     <script>
+        let invoiceItems = [];
+
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('invoice_date').value = new Date().toISOString().split('T')[0];
             document.getElementById('invoice-form').dispatchEvent(new Event('change'));
             updateSummaries();
+            renderInvoiceItems();
         });
 
         function updateSummaries() {
@@ -189,6 +208,47 @@
 
         function closePopup() {
             document.getElementById('popup-overlay').classList.add('hidden');
+        }
+
+        function renderInvoiceItems() {
+            const container = document.getElementById('invoice-items-container');
+            container.innerHTML = '';
+            invoiceItems.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'mb-2 p-2 border rounded';
+                itemElement.innerHTML = `
+                    <input type="text" name="item_${index}" placeholder="Item" class="w-full px-3 py-2 border rounded mb-1" required value="${item.item}" onchange="updateInvoiceItem(${index}, 'item', this.value)">
+                    <input type="number" name="amount_${index}" placeholder="Amount" class="w-full px-3 py-2 border rounded mb-1" required value="${item.amount}" onchange="updateInvoiceItem(${index}, 'amount', this.value)">
+                    <input type="text" name="comments_${index}" placeholder="Comments" class="w-full px-3 py-2 border rounded mb-1" value="${item.comments}" onchange="updateInvoiceItem(${index}, 'comments', this.value)">
+                    <button type="button" class="mt-1 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300" onclick="removeInvoiceItem(${index})">
+                        Remove
+                    </button>
+                `;
+                container.appendChild(itemElement);
+            });
+            updateInvoiceItemsInput();
+        }
+
+        function addInvoiceItem() {
+            invoiceItems.push({ item: '', amount: 0, comments: '' });
+            renderInvoiceItems();
+            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+        }
+
+        function updateInvoiceItem(index, field, value) {
+            invoiceItems[index][field] = field === 'amount' ? parseFloat(value) : value;
+            updateInvoiceItemsInput();
+            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+        }
+
+        function removeInvoiceItem(index) {
+            invoiceItems.splice(index, 1);
+            renderInvoiceItems();
+            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+        }
+
+        function updateInvoiceItemsInput() {
+            document.getElementById('invoice_items').value = JSON.stringify(invoiceItems);
         }
 
         document.getElementById('popup-overlay').addEventListener('click', function(e) {

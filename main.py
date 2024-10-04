@@ -1,12 +1,13 @@
 from fastapi import FastAPI, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import Response, JSONResponse, StreamingResponse, FileResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fasthx import Jinja
 from datetime import datetime
 from io import BytesIO
-from gen_invoice import generate_invoice, load_invoice_items
-from models import BankDetails, InvoiceForm, Invoice, CompanyInfo, CustomerInfo
+from gen_invoice import generate_invoice
+from models import BankDetails, InvoiceForm, Invoice, CompanyInfo, CustomerInfo, InvoiceItem
+import json
 
 app = FastAPI()
 
@@ -19,7 +20,7 @@ templates = Jinja2Templates(directory="templates")
 # Create a FastHX Jinja instance
 jinja = Jinja(templates)
 
-async def get_invoice_form(
+async def get_invoice(
     customer_name: str = Form(...),
     invoice_date: str = Form(...),
     address_line1: str = Form(...),
@@ -32,8 +33,9 @@ async def get_invoice_form(
     swift_code: str = Form(...),
     account_number: str = Form(...),
     bank_address: str = Form(...),
-) -> InvoiceForm:
-    return InvoiceForm(
+    items: str = Form(...)
+) -> Invoice:
+    form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
         customer_info=CustomerInfo(
             name=customer_name,
@@ -54,6 +56,16 @@ async def get_invoice_form(
             bank_address=bank_address
         )
     )
+    
+    invoice_items = [InvoiceItem(**item) for item in json.loads(items)]
+    total = sum(item.amount for item in invoice_items)
+    
+    return Invoice(
+        form_data=form_data,
+        items=invoice_items,
+        invoice_number=datetime.now().strftime("%Y%m%d%H%M%S"),
+        total=total
+    )
 
 @app.get("/")
 async def home(request: Request):
@@ -65,18 +77,8 @@ async def home(request: Request):
 @jinja.hx("invoice.html")
 async def generate_invoice_html(
     request: Request,
-    form_data: InvoiceForm = Depends(get_invoice_form)
+    invoice: Invoice = Depends(get_invoice)
 ):
-    items = load_invoice_items()
-    total = sum(item.amount for item in items)
-    
-    invoice = Invoice(
-        form_data=form_data,
-        items=items,
-        invoice_number=datetime.now().strftime("%Y%m%d%H%M%S"),
-        total=total
-    )
-    
     context = {
         "request": request,
         "invoice": invoice
@@ -85,10 +87,10 @@ async def generate_invoice_html(
     return templates.TemplateResponse("invoice.html", context)
 
 @app.post("/download-invoice")
-async def download_invoice(form_data: InvoiceForm = Depends(get_invoice_form)):
+async def download_invoice(invoice: Invoice = Depends(get_invoice)):
     try:
         pdf_buffer = BytesIO()
-        generate_invoice(pdf_buffer, form_data)
+        generate_invoice(pdf_buffer, invoice)
         pdf_buffer.seek(0)
         
         filename = f"invoice_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
@@ -98,7 +100,6 @@ async def download_invoice(form_data: InvoiceForm = Depends(get_invoice_form)):
         }
         return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
     except Exception as e:
-        raise e
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/customer-form")

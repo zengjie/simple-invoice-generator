@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 class CompanyInfo(BaseModel):
     name: str
@@ -10,7 +10,7 @@ class CompanyInfo(BaseModel):
 class CustomerInfo(BaseModel):
     name: str
     address_line1: str
-    address_line2: str
+    address_line2: Optional[str] = ""
     city_country: str
 
 class BankDetails(BaseModel):
@@ -28,7 +28,7 @@ class InvoiceForm(BaseModel):
 
 class InvoiceItem(BaseModel):
     item: str
-    amount: float = Field(ge=0)
+    amount: float
     comments: str = ""
 
 class Invoice(BaseModel):

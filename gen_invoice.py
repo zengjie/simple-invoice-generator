@@ -4,42 +4,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.lib.units import inch
-from datetime import datetime
-from models import InvoiceForm, InvoiceItem, Invoice, BankDetails, CompanyInfo, CustomerInfo
-from typing import List
-import csv
+from models import Invoice
 
-def load_invoice_items() -> List[InvoiceItem]:
-    items = []
-    try:
-        with open('invoice_items.csv', 'r') as file:
-            csv_reader = csv.DictReader(file)
-            for row in csv_reader:
-                item = InvoiceItem(
-                    item=row['item'],
-                    amount=float(row['amount']),
-                    comments=row['comments']
-                )
-                items.append(item)
-    except FileNotFoundError:
-        # If the CSV file is not found, use dummy data
-        items = [
-            InvoiceItem(item="Item 1", amount=100.00, comments="Comment 1"),
-            InvoiceItem(item="Item 2", amount=200.00, comments="Comment 2"),
-            InvoiceItem(item="Item 3", amount=300.00, comments="Comment 3"),
-        ]
-    return items
-
-def generate_invoice(output_file, form_data: InvoiceForm):
-    items = load_invoice_items()
-    total = sum(item.amount for item in items)
-    invoice = Invoice(
-        form_data=form_data,
-        items=items,
-        invoice_number=datetime.now().strftime("%Y%m%d%H%M%S"),
-        total=total
-    )
-
+def generate_invoice(output_file, invoice: Invoice):
     doc = SimpleDocTemplate(output_file, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
 
@@ -146,6 +113,8 @@ def generate_invoice(output_file, form_data: InvoiceForm):
 # Update the test function
 if __name__ == "__main__":
     from datetime import date
+    from models import InvoiceForm, CustomerInfo, CompanyInfo, BankDetails, Invoice, InvoiceItem
+
     test_form = InvoiceForm(
         invoice_date=date(2024, 5, 10),
         customer_info=CustomerInfo(
@@ -167,5 +136,16 @@ if __name__ == "__main__":
             bank_address="China Merchants Bank Tower NO.7088, Shennan Boulevard, Shenzhen, China"
         )
     )
-    generate_invoice('invoice.pdf', test_form)
-    print("invoice.pdf has been created successfully.")
+
+    test_invoice = Invoice(
+        form_data=test_form,
+        items=[
+            InvoiceItem(item="Game Development Services", amount=5000.00, comments="Project milestone 1"),
+            InvoiceItem(item="Art Assets", amount=2000.00, comments="Character designs"),
+        ],
+        invoice_number="INV-20240510-001",
+        total=7000.00
+    )
+
+    generate_invoice('test_invoice.pdf', test_invoice)
+    print("test_invoice.pdf has been created successfully.")
