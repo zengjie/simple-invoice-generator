@@ -20,7 +20,9 @@ def generate_invoice(output_file, invoice: Invoice):
         [Paragraph("<font size=24><b>INVOICE</b></font>", styles['Left']), 
          Paragraph(f"""<font size=14><b>{invoice.form_data.company_info.name}</b></font>
                    <br/><font size=12>{invoice.form_data.company_info.tagline}</font>
-                   <br/><br/><font size=10>{invoice.form_data.company_info.address}</font>""", styles['Right'])]
+                   <br/><br/><font size=10>{invoice.form_data.company_info.address_line1}</font>
+                   <br/><font size=10>{invoice.form_data.company_info.address_line2}</font>
+                   <br/><font size=10>{invoice.form_data.company_info.city_country}</font>""", styles['Right'])]
     ]
     header = Table(header_data, colWidths=[2*inch, 4.5*inch])
     header.setStyle(TableStyle([
@@ -126,7 +128,9 @@ if __name__ == "__main__":
         company_info=CompanyInfo(
             name="Lebao Interactive Technology Co., Ltd.",
             tagline="Your Global Game Dev Partner",
-            address="Office E1003, Sanlitun SOHO, Chaoyang, Beijing, China"
+            address_line1="Office E1003, Sanlitun SOHO",
+            address_line2="Chaoyang District",
+            city_country="Beijing, China"
         ),
         bank_details=BankDetails(
             beneficiary_bank="CHINA MERCHANTS BANK H.O. SHENZHEN",

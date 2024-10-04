@@ -5,7 +5,9 @@ from typing import List, Optional
 class CompanyInfo(BaseModel):
     name: str
     tagline: str
-    address: str
+    address_line1: str
+    address_line2: Optional[str] = ""
+    city_country: str
 
 class CustomerInfo(BaseModel):
     name: str

@@ -29,7 +29,9 @@ async def get_invoice(
     city_country: str = Form(...),
     company_name: str = Form(...),
     company_tagline: str = Form(...),
-    company_address: str = Form(...),
+    company_address_line1: str = Form(...),
+    company_address_line2: str = Form(None),
+    company_city_country: str = Form(...),
     bank_name: str = Form(...),
     swift_code: str = Form(...),
     account_number: str = Form(...),
@@ -48,7 +50,9 @@ async def get_invoice(
         company_info=CompanyInfo(
             name=company_name,
             tagline=company_tagline,
-            address=company_address,
+            address_line1=company_address_line1,
+            address_line2=company_address_line2 or "",
+            city_country=company_city_country,
         ),
         bank_details=BankDetails(
             beneficiary_bank=bank_name,

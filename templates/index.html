@@ -22,7 +22,9 @@
                 <!-- Company Information -->
                 <input type="hidden" name="company_name" id="company_name" value="Acme Corporation">
                 <input type="hidden" name="company_tagline" id="company_tagline" value="Innovative Solutions for Tomorrow">
-                <input type="hidden" name="company_address" id="company_address" value="456 Tech Lane, Silicon Valley, CA 94000">
+                <input type="hidden" name="company_address_line1" id="company_address_line1" value="456 Tech Lane">
+                <input type="hidden" name="company_address_line2" id="company_address_line2" value="Suite 789">
+                <input type="hidden" name="company_city_country" id="company_city_country" value="Silicon Valley, CA 94000">
 
                 <!-- Bank Information -->
                 <input type="hidden" name="bank_name" id="bank_name" value="Global Bank">
@@ -125,7 +127,7 @@
 
         function updateSummaries() {
             document.getElementById('customer-summary').textContent = `${document.getElementById('customer_name').value}, ${document.getElementById('city_country').value}`;
-            document.getElementById('company-summary').textContent = document.getElementById('company_name').value;
+            document.getElementById('company-summary').textContent = `${document.getElementById('company_name').value}, ${document.getElementById('company_city_country').value}`;
             document.getElementById('bank-summary').textContent = `${document.getElementById('bank_name').value}, ${document.getElementById('swift_code').value}, ${document.getElementById('account_number').value}`;
         }
 
@@ -165,7 +167,9 @@
                     <form id="company-form">
                         <input type="text" name="company_name" placeholder="Company Name" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_name').value}">
                         <input type="text" name="company_tagline" placeholder="Company Tagline" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_tagline').value}">
-                        <input type="text" name="company_address" placeholder="Company Address" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_address').value}">
+                        <input type="text" name="company_address_line1" placeholder="Address Line 1" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_address_line1').value}">
+                        <input type="text" name="company_address_line2" placeholder="Address Line 2" class="w-full px-3 py-2 border rounded mb-2" value="${document.getElementById('company_address_line2').value}">
+                        <input type="text" name="company_city_country" placeholder="City, Country" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_city_country').value}">
                         <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">Save</button>
                     </form>
                 `;

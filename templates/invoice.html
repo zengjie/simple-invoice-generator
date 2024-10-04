@@ -6,7 +6,11 @@
                 <div class="text-right">
                     <h2 class="text-xl font-bold">{{ invoice.form_data.company_info.name }}</h2>
                     <p class="text-sm">{{ invoice.form_data.company_info.tagline }}</p>
-                    <p class="text-sm">{{ invoice.form_data.company_info.address }}</p>
+                    <p class="text-sm">{{ invoice.form_data.company_info.address_line1 }}</p>
+                    {% if invoice.form_data.company_info.address_line2 %}
+                        <p class="text-sm">{{ invoice.form_data.company_info.address_line2 }}</p>
+                    {% endif %}
+                    <p class="text-sm">{{ invoice.form_data.company_info.city_country }}</p>
                 </div>
             </div>
 
