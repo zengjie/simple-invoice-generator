@@ -44,7 +44,13 @@
                     {% for item in invoice.items %}
                     <tr class="border-b border-gray-200">
                         <td class="py-2 px-4">{{ item.item }}</td>
-                        <td class="py-2 px-4 text-right">${{ "%.2f"|format(item.amount) }}</td>
+                        <td class="py-2 px-4 text-right">
+                            {% if item.amount < 0 %}
+                                -${{ "%.2f"|format(item.amount|abs) }}
+                            {% else %}
+                                ${{ "%.2f"|format(item.amount) }}
+                            {% endif %}
+                        </td>
                         <td class="py-2 px-4">{{ item.comments }}</td>
                     </tr>
                     {% endfor %}

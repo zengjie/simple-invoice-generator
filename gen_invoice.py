@@ -6,6 +6,11 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.lib.units import inch
 from models import Invoice
 
+def format_amount(amount):
+    if amount < 0:
+        return f"-${abs(amount):,.2f}"
+    return f"${amount:,.2f}"
+
 def generate_invoice(output_file, invoice: Invoice):
     doc = SimpleDocTemplate(output_file, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
@@ -62,7 +67,7 @@ def generate_invoice(output_file, invoice: Invoice):
     # Products table
     products_data = [["ITEM", "AMOUNT", "COMMENTS"]]
     for item in invoice.items:
-        products_data.append([item.item, f"${item.amount:,.2f}", item.comments])
+        products_data.append([item.item, format_amount(item.amount), item.comments])
 
     products_table = Table(products_data, colWidths=[2.5*inch, 1*inch, 2.8*inch])
     products_table.setStyle(TableStyle([
@@ -80,7 +85,7 @@ def generate_invoice(output_file, invoice: Invoice):
 
     # Totals
     elements.append(Spacer(1, 0.25*inch))
-    elements.append(Paragraph(f"<font size=14><b>TOTAL DUE: US${invoice.total:,.2f}</b></font>", styles['Right']))
+    elements.append(Paragraph(f"<font size=14><b>TOTAL DUE: {format_amount(invoice.total)}</b></font>", styles['Right']))
     elements.append(Spacer(1, 1*inch))
 
     # Bank details
