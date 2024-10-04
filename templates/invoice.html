@@ -84,6 +84,7 @@
 <script>
 document.getElementById('download-button').addEventListener('click', function() {
     const form = new FormData(document.getElementById('invoice-form'));
+    const invoiceNumber = '{{ invoice.invoice_number }}';
     
     fetch('/download-invoice', {
         method: 'POST',
@@ -95,7 +96,7 @@ document.getElementById('download-button').addEventListener('click', function() 
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = 'invoice.pdf';
+        a.download = `invoice_${invoiceNumber}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
