@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <div class="flex h-screen">
+        <!-- Left Sidebar -->
+        <div class="w-1/3 bg-white p-8 overflow-y-auto">
+            <h1 class="text-2xl font-bold mb-6">Invoice Generator</h1>
+            <form id="invoice-form" hx-post="/generate-invoice" hx-target="#invoice-preview" hx-trigger="change">
+                <!-- Customer Information -->
+                <input type="hidden" name="customer_name" id="customer_name" value="John Doe">
+                <input type="hidden" name="address_line1" id="address_line1" value="123 Main St">
+                <input type="hidden" name="address_line2" id="address_line2" value="Apt 4B">
+                <input type="hidden" name="city_country" id="city_country" value="New York, USA">
+
+                <!-- Company Information -->
+                <input type="hidden" name="company_name" id="company_name" value="Acme Corporation">
+                <input type="hidden" name="company_tagline" id="company_tagline" value="Innovative Solutions for Tomorrow">
+                <input type="hidden" name="company_address" id="company_address" value="456 Tech Lane, Silicon Valley, CA 94000">
+
+                <!-- Bank Information -->
+                <input type="hidden" name="bank_name" id="bank_name" value="Global Bank">
+                <input type="hidden" name="swift_code" id="swift_code" value="GLBAUS33XXX">
+                <input type="hidden" name="account_number" id="account_number" value="1234567890">
+                <input type="hidden" name="bank_address" id="bank_address" value="123 Finance Street, New York, NY 10001, USA">
+
+                <!-- Edit Sections -->
+                <div class="mb-6 space-y-4">
+                    <!-- Customer Section -->
+                    <div class="border p-4 rounded-md">
+                        <div class="flex justify-between items-center mb-2">
+                            <h2 class="text-lg font-semibold">Customer</h2>
+                            <button type="button" class="px-3 py-1 bg-blue-500 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    onclick="showPopup('customer-form')">
+                                Edit
+                            </button>
+                        </div>
+                        <p id="customer-summary" class="text-sm"></p>
+                    </div>
+
+                    <!-- Company Section -->
+                    <div class="border p-4 rounded-md">
+                        <div class="flex justify-between items-center mb-2">
+                            <h2 class="text-lg font-semibold">Company</h2>
+                            <button type="button" class="px-3 py-1 bg-blue-500 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    onclick="showPopup('company-form')">
+                                Edit
+                            </button>
+                        </div>
+                        <p id="company-summary" class="text-sm"></p>
+                    </div>
+
+                    <!-- Bank Section -->
+                    <div class="border p-4 rounded-md">
+                        <div class="flex justify-between items-center mb-2">
+                            <h2 class="text-lg font-semibold">Bank Details</h2>
+                            <button type="button" class="px-3 py-1 bg-blue-500 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    onclick="showPopup('bank-form')">
+                                Edit
+                            </button>
+                        </div>
+                        <p id="bank-summary" class="text-sm"></p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="invoice_date" class="block mb-2">Invoice Date:</label>
+                    <input type="date" id="invoice_date" name="invoice_date" required class="w-full px-3 py-2 border rounded">
+                </div>
+                <!-- Add more invoice-specific fields here -->
+            </form>
+        </div>
+
+        <!-- Main Content -->
+        <div class="w-2/3 p-8 overflow-y-auto">            
+            <!-- Invoice Preview -->
+            <div id="invoice-preview" class="bg-white p-8 rounded shadow-md"></div>
+        </div>
+    </div>
+
+    <!-- Popup Overlay -->
+    <div id="popup-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div id="popup-content"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('invoice_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+            updateSummaries();
+        });
+
+        function updateSummaries() {
+            document.getElementById('customer-summary').textContent = `${document.getElementById('customer_name').value}, ${document.getElementById('city_country').value}`;
+            document.getElementById('company-summary').textContent = document.getElementById('company_name').value;
+            document.getElementById('bank-summary').textContent = `${document.getElementById('bank_name').value}, ${document.getElementById('swift_code').value}, ${document.getElementById('account_number').value}`;
+        }
+
+        function showPopup(formId) {
+            const popupOverlay = document.getElementById('popup-overlay');
+            const popupContent = document.getElementById('popup-content');
+            
+            let formHtml = '';
+            if (formId === 'customer-form') {
+                formHtml = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Customer Information</h3>
+                        <button type="button" onclick="closePopup()" class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="customer-form">
+                        <input type="text" name="customer_name" placeholder="Customer Name" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('customer_name').value}">
+                        <input type="text" name="address_line1" placeholder="Address Line 1" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('address_line1').value}">
+                        <input type="text" name="address_line2" placeholder="Address Line 2" class="w-full px-3 py-2 border rounded mb-2" value="${document.getElementById('address_line2').value}">
+                        <input type="text" name="city_country" placeholder="City, Country" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('city_country').value}">
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">Save</button>
+                    </form>
+                `;
+            } else if (formId === 'company-form') {
+                formHtml = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Company Information</h3>
+                        <button type="button" onclick="closePopup()" class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="company-form">
+                        <input type="text" name="company_name" placeholder="Company Name" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_name').value}">
+                        <input type="text" name="company_tagline" placeholder="Company Tagline" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_tagline').value}">
+                        <input type="text" name="company_address" placeholder="Company Address" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_address').value}">
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">Save</button>
+                    </form>
+                `;
+            } else if (formId === 'bank-form') {
+                formHtml = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Bank Details</h3>
+                        <button type="button" onclick="closePopup()" class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <form id="bank-form">
+                        <input type="text" name="bank_name" placeholder="Bank Name" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('bank_name').value}">
+                        <input type="text" name="swift_code" placeholder="SWIFT Code" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('swift_code').value}">
+                        <input type="text" name="account_number" placeholder="Account Number" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('account_number').value}">
+                        <input type="text" name="bank_address" placeholder="Bank Address" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('bank_address').value}">
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">Save</button>
+                    </form>
+                `;
+            }
+
+            popupContent.innerHTML = formHtml;
+            popupOverlay.classList.remove('hidden');
+
+            const form = popupContent.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    for (let [key, value] of formData.entries()) {
+                        const input = document.getElementById(key);
+                        if (input) {
+                            input.value = value;
+                        }
+                    }
+                    closePopup();
+                    updateSummaries();
+
+                    // Trigger the invoice preview update
+                    document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+                });
+            }
+        }
+
+        function closePopup() {
+            document.getElementById('popup-overlay').classList.add('hidden');
+        }
+
+        document.getElementById('popup-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePopup();
+            }
+        });
+    </script>
+</body>
+</html>

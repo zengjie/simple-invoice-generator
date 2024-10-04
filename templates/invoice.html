@@ -1,0 +1,109 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-6">
+                <h1 class="text-4xl font-bold">INVOICE</h1>
+                <div class="text-right">
+                    <h2 class="text-xl font-bold">{{ invoice.form_data.company_info.name }}</h2>
+                    <p class="text-sm">{{ invoice.form_data.company_info.tagline }}</p>
+                    <p class="text-sm">{{ invoice.form_data.company_info.address }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">BILL TO:</h3>
+                    <p class="font-bold">{{ invoice.form_data.customer_info.name }}</p>
+                    <p>{{ invoice.form_data.customer_info.address_line1 }}</p>
+                    {% if invoice.form_data.customer_info.address_line2 %}
+                        <p>{{ invoice.form_data.customer_info.address_line2 }}</p>
+                    {% endif %}
+                    <p>{{ invoice.form_data.customer_info.city_country }}</p>
+                </div>
+                <div class="text-right">
+                    <h3 class="text-lg font-semibold mb-2">INVOICE DETAILS</h3>
+                    <p><strong>INVOICE NO:</strong> {{ invoice.invoice_number }}</p>
+                    <p><strong>INVOICE DATE:</strong> {{ invoice.form_data.invoice_date }}</p>
+                    <p><strong>DUE DATE:</strong> {{ invoice.form_data.invoice_date }}</p>
+                </div>
+            </div>
+            
+            <table class="w-full mb-6">
+                <thead>
+                    <tr class="bg-black text-white">
+                        <th class="py-2 px-4 text-left">ITEM</th>
+                        <th class="py-2 px-4 text-right">AMOUNT</th>
+                        <th class="py-2 px-4 text-left">COMMENTS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.items %}
+                    <tr class="border-b border-gray-200">
+                        <td class="py-2 px-4">{{ item.description }}</td>
+                        <td class="py-2 px-4 text-right">${{ item.amount | round(2) }}</td>
+                        <td class="py-2 px-4">{{ item.comment }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <div class="text-right mb-6">
+                <p class="text-xl font-bold">TOTAL DUE: ${{ invoice.total | round(2) }}</p>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-2">BANK DETAILS</h3>
+                <p><strong>Beneficiary's Bank:</strong> {{ invoice.form_data.bank_details.beneficiary_bank }}</p>
+                <p><strong>SWIFT Code:</strong> {{ invoice.form_data.bank_details.swift_code }}</p>
+                <p><strong>Beneficiary's Name:</strong> {{ invoice.form_data.bank_details.beneficiary_name }}</p>
+                <p><strong>Beneficiary's A/C No.:</strong> {{ invoice.form_data.bank_details.account_number }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-8 text-center">
+        <button id="download-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Download Invoice PDF
+        </button>
+    </div>
+
+    <div id="download-result" class="mt-4 text-center text-gray-700"></div>
+</div>
+
+<script>
+document.getElementById('download-button').addEventListener('click', function() {
+    const form = new FormData();
+    form.append('customer_name', '{{ invoice.form_data.customer_info.name }}');
+    form.append('invoice_date', '{{ invoice.form_data.invoice_date }}');
+    form.append('address_line1', '{{ invoice.form_data.customer_info.address_line1 }}');
+    form.append('address_line2', '{{ invoice.form_data.customer_info.address_line2 }}');
+    form.append('city_country', '{{ invoice.form_data.customer_info.city_country }}');
+    form.append('company_name', '{{ invoice.form_data.company_info.name }}');
+    form.append('company_tagline', '{{ invoice.form_data.company_info.tagline }}');
+    form.append('company_address', '{{ invoice.form_data.company_info.address }}');
+    form.append('bank_name', '{{ invoice.form_data.bank_details.beneficiary_bank }}');
+    form.append('swift_code', '{{ invoice.form_data.bank_details.swift_code }}');
+    form.append('account_number', '{{ invoice.form_data.bank_details.account_number }}');
+    form.append('bank_address', '{{ invoice.form_data.bank_details.bank_address }}');
+
+    fetch('/download-invoice', {
+        method: 'POST',
+        body: form
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'invoice.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('download-result').textContent = 'Error downloading the invoice. Please try again.';
+    });
+});
+</script>

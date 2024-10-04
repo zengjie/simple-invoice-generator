@@ -1,0 +1,19 @@
+## Code Style and Structure
+- Write concise, readable, and maintainable Python code.
+- Use FastAPI and FastHX for the API and frontend.
+- Use Jinja for the HTML templates.
+- Use ReportLab for the PDF generation.
+
+## Naming Conventions
+- Use lowercase with underscores for variable and function names.
+- Use CamelCase for class names.
+- Use UPPERCASE for constants.
+
+## File Structure
+- Use templates/ for the HTML templates.
+- Use static/ for the static files.
+- Use main.py for the main application.
+
+## Code Formatting
+- Use 4 spaces for indentation.
+- Use 80 characters for the maximum line length.
