@@ -117,18 +117,20 @@
         let invoiceItems = [];
 
         document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('invoice_date').value = today;
             document.getElementById('due_date').value = today; // Set due date to today by default
-            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
             updateSummaries();
             renderInvoiceItems();
+            updateInvoicePreview(); // Add this line to update the preview when the page loads
         });
 
         function updateSummaries() {
             document.getElementById('customer-summary').textContent = `${document.getElementById('customer_name').value}, ${document.getElementById('city_country').value}`;
             document.getElementById('company-summary').textContent = `${document.getElementById('company_name').value}, ${document.getElementById('company_city_country').value}`;
             document.getElementById('bank-summary').textContent = `${document.getElementById('bank_name').value}, ${document.getElementById('swift_code').value}, ${document.getElementById('account_number').value}`;
+            saveToLocalStorage();
         }
 
         function showPopup(formId) {
@@ -242,23 +244,53 @@
         function addInvoiceItem() {
             invoiceItems.push({ item: '', amount: 0, comments: '' });
             renderInvoiceItems();
-            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+            updateInvoicePreview(); // Add this line to update the preview when an item is added
+            saveToLocalStorage();
         }
 
         function updateInvoiceItem(index, field, value) {
             invoiceItems[index][field] = field === 'amount' ? parseFloat(value) : value;
             updateInvoiceItemsInput();
-            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+            updateInvoicePreview(); // Add this line to update the preview when an item is updated
+            saveToLocalStorage();
         }
 
         function removeInvoiceItem(index) {
             invoiceItems.splice(index, 1);
             renderInvoiceItems();
-            document.getElementById('invoice-form').dispatchEvent(new Event('change'));
+            updateInvoicePreview(); // Add this line to update the preview when an item is removed
+            saveToLocalStorage();
         }
 
         function updateInvoiceItemsInput() {
             document.getElementById('invoice_items').value = JSON.stringify(invoiceItems);
+        }
+
+        function saveToLocalStorage() {
+            const formData = new FormData(document.getElementById('invoice-form'));
+            const data = Object.fromEntries(formData.entries());
+            data.invoiceItems = invoiceItems;
+            localStorage.setItem('invoiceData', JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('invoiceData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                Object.keys(data).forEach(key => {
+                    const input = document.getElementById(key);
+                    if (input) {
+                        input.value = data[key];
+                    }
+                });
+                invoiceItems = data.invoiceItems || [];
+                updateInvoiceItemsInput(); // Add this line to ensure the hidden input is updated
+            }
+        }
+
+        function updateInvoicePreview() {
+            // Trigger the invoice preview update using htmx
+            htmx.trigger('#invoice-form', 'change');
         }
 
         document.getElementById('popup-overlay').addEventListener('click', function(e) {
@@ -266,6 +298,9 @@
                 closePopup();
             }
         });
+
+        // Add event listener to save data when form changes
+        document.getElementById('invoice-form').addEventListener('change', saveToLocalStorage);
     </script>
 </body>
 </html>
