@@ -1,13 +1,23 @@
-from fastapi import FastAPI, Request, Form, Depends
+import os
+import tempfile
+from fastapi import FastAPI, Request, Form, Depends, File, UploadFile, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, StreamingResponse
 from fasthx import Jinja
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import BytesIO
 from gen_invoice import generate_invoice
-from models import BankDetails, InvoiceForm, Invoice, CompanyInfo, CustomerInfo, InvoiceItem
+from models import (
+    BankDetails,
+    InvoiceForm,
+    Invoice,
+    CompanyInfo,
+    CustomerInfo,
+    InvoiceItem,
+)
 import json
+from PyPDF2 import PdfReader
 
 app = FastAPI()
 
@@ -19,6 +29,7 @@ templates = Jinja2Templates(directory="templates")
 
 # Create a FastHX Jinja instance
 jinja = Jinja(templates)
+
 
 async def get_invoice(
     customer_name: str = Form(...),
@@ -36,7 +47,7 @@ async def get_invoice(
     swift_code: str = Form(...),
     account_number: str = Form(...),
     bank_address: str = Form(...),
-    items: str = Form(...)
+    items: str = Form(...),
 ) -> Invoice:
     form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
@@ -59,38 +70,40 @@ async def get_invoice(
             swift_code=swift_code,
             beneficiary_name=company_name,
             account_number=account_number,
-            bank_address=bank_address
-        )
+            bank_address=bank_address,
+        ),
     )
-    
+
     invoice_items = [InvoiceItem(**item) for item in json.loads(items)]
     total = sum(item.amount for item in invoice_items)
-    
+
     return Invoice(
         form_data=form_data,
         items=invoice_items,
         invoice_number=datetime.now().strftime("%Y%m%d%H%M%S"),
-        total=total
+        total=total,
     )
+
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-    })
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+        },
+    )
+
 
 @app.post("/generate-invoice")
 @jinja.hx("invoice.html")
 async def generate_invoice_html(
-    request: Request,
-    invoice: Invoice = Depends(get_invoice)
+    request: Request, invoice: Invoice = Depends(get_invoice)
 ):
-    context = {
-        "request": request,
-        "invoice": invoice
-    }
-    
+    context = {"request": request, "invoice": invoice}
+
     return templates.TemplateResponse("invoice.html", context)
+
 
 @app.post("/download-invoice")
 async def download_invoice(invoice: Invoice = Depends(get_invoice)):
@@ -98,28 +111,60 @@ async def download_invoice(invoice: Invoice = Depends(get_invoice)):
         pdf_buffer = BytesIO()
         generate_invoice(pdf_buffer, invoice)
         pdf_buffer.seek(0)
-        
+
         filename = f"invoice_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-        
-        headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"'
-        }
-        return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
+
+        headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+        return StreamingResponse(
+            pdf_buffer, media_type="application/pdf", headers=headers
+        )
     except Exception as e:
+        raise
         return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 @app.get("/customer-form")
 async def customer_form(request: Request):
     return templates.TemplateResponse("customer_form.html", {"request": request})
 
+
 @app.get("/company-form")
 async def company_form(request: Request):
     return templates.TemplateResponse("company_form.html", {"request": request})
+
 
 @app.get("/bank-form")
 async def bank_form(request: Request):
     return templates.TemplateResponse("bank_form.html", {"request": request})
 
+
+@app.post("/upload-invoice")
+async def upload_invoice(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        content = await file.read()
+        temp_file.write(content)
+        temp_file.flush()
+
+        try:
+            reader = PdfReader(temp_file.name)
+            metadata = reader.metadata
+            if "/Subject" in metadata:
+                invoice_data = json.loads(metadata["/Subject"])
+                return {"success": True, "data": invoice_data}
+            else:
+                return {"success": False, "message": "No invoice data found in the PDF's Subject metadata"}
+        except json.JSONDecodeError:
+            return {"success": False, "message": "Invalid JSON data in PDF's Subject metadata"}
+        except Exception as e:
+            return {"success": False, "message": f"Error processing PDF: {str(e)}"}
+        finally:
+            os.unlink(temp_file.name)
+
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

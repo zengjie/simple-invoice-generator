@@ -10,9 +10,9 @@
 <body class="bg-gray-100" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <div class="flex h-screen">
         <!-- Left Sidebar -->
-        <div class="w-1/3 bg-white p-8 overflow-y-auto">
+        <div class="w-1/3 bg-white p-8 overflow-y-auto flex flex-col">
             <h1 class="text-2xl font-bold mb-6">Invoice Generator</h1>
-            <form id="invoice-form" hx-post="/generate-invoice" hx-target="#invoice-preview" hx-trigger="change">
+            <form id="invoice-form" hx-post="/generate-invoice" hx-target="#invoice-preview" hx-trigger="change" class="flex-grow">
                 <!-- Customer Information -->
                 <input type="hidden" name="customer_name" id="customer_name" value="John Doe">
                 <input type="hidden" name="address_line1" id="address_line1" value="123 Main St">
@@ -97,6 +97,15 @@
                     <input type="date" id="due_date" name="due_date" required class="w-full px-3 py-2 border rounded">
                 </div>
             </form>
+
+            <!-- Replace the Upload Zone with a button -->
+            <div class="mt-6 border-t pt-6">
+                <button type="button" 
+                        class="w-full px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        onclick="showDuplicatePopup()">
+                    Duplicate Existing Invoice
+                </button>
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -110,6 +119,54 @@
     <div id="popup-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div id="popup-content"></div>
+        </div>
+    </div>
+
+    <!-- Add a new popup for the duplicate invoice feature -->
+    <div id="duplicate-popup" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-10 mx-auto p-8 border w-3/4 max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl leading-6 font-medium text-gray-900">Duplicate Existing Invoice</h3>
+                <button type="button" onclick="closeDuplicatePopup()" class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <p class="text-base text-gray-600 mb-6">
+                Upload a previously generated invoice PDF to duplicate its content. This allows you to quickly create new invoices based on existing ones.
+            </p>
+            <form id="upload-form" hx-post="/upload-invoice" hx-encoding="multipart/form-data" hx-target="#upload-result" hx-indicator="#loading">
+                <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+                    <input type="file" name="file" accept=".pdf" class="hidden" id="file-upload">
+                    <label for="file-upload" class="cursor-pointer">
+                        <div id="drop-zone-content">
+                            <svg class="mx-auto h-16 w-16 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <p class="mt-4 text-lg text-gray-600">
+                                <span class="font-medium text-indigo-600 hover:text-indigo-500">Click to upload</span> or drag and drop
+                            </p>
+                            <p class="mt-2 text-sm text-gray-500">PDF files only</p>
+                        </div>
+                        <div id="file-selected" class="hidden">
+                            <svg class="mx-auto h-16 w-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p class="mt-4 text-lg font-medium text-gray-900" id="selected-file-name"></p>
+                            <p class="mt-2 text-sm text-gray-500">Click to change file</p>
+                        </div>
+                    </label>
+                </div>
+            </form>
+            <div id="loading" class="htmx-indicator mt-6 text-center">
+                <svg class="animate-spin h-8 w-8 mr-3 inline-block text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            </div>
+            <div id="upload-result" class="mt-6 text-base"></div>
         </div>
     </div>
 
@@ -301,6 +358,125 @@
 
         // Add event listener to save data when form changes
         document.getElementById('invoice-form').addEventListener('change', saveToLocalStorage);
+
+        // Add this new function to handle the upload result
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.target.id === 'upload-result') {
+                const response = JSON.parse(event.detail.xhr.responseText);
+                if (response.success && response.data) {
+                    populateFormWithUploadedData(response.data);
+                    document.getElementById('upload-result').innerHTML = '<p class="text-green-600 font-semibold">Invoice data loaded successfully!</p>';
+                } else {
+                    document.getElementById('upload-result').innerHTML = `<p class="text-red-600 font-semibold">${response.message}</p>`;
+                    resetDropZone();
+                }
+                // Scroll to the upload result
+                document.getElementById('upload-result').scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+        function populateFormWithUploadedData(data) {
+            // Populate form fields with the extracted data
+            document.getElementById('invoice_date').value = data.invoice_date;
+            document.getElementById('due_date').value = data.invoice_date; // Assuming due date is the same as invoice date
+            document.getElementById('customer_name').value = data.customer_info.name;
+            document.getElementById('address_line1').value = data.customer_info.address_line1;
+            document.getElementById('address_line2').value = data.customer_info.address_line2;
+            document.getElementById('city_country').value = data.customer_info.city_country;
+            
+            document.getElementById('company_name').value = data.company_info.name;
+            document.getElementById('company_tagline').value = data.company_info.tagline;
+            document.getElementById('company_address_line1').value = data.company_info.address_line1;
+            document.getElementById('company_address_line2').value = data.company_info.address_line2;
+            document.getElementById('company_city_country').value = data.company_info.city_country;
+            
+            document.getElementById('bank_name').value = data.bank_details.beneficiary_bank;
+            document.getElementById('swift_code').value = data.bank_details.swift_code;
+            document.getElementById('account_number').value = data.bank_details.account_number;
+            document.getElementById('bank_address').value = data.bank_details.bank_address;
+            
+            // Populate invoice items
+            invoiceItems = data.items.map(item => ({
+                item: item.item,
+                amount: item.amount,
+                comments: item.comments
+            }));
+            renderInvoiceItems();
+            
+            updateSummaries();
+            updateInvoicePreview();            
+        }
+
+        // Add these new functions to handle drag and drop
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.add('bg-gray-100');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.remove('bg-gray-100');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.remove('bg-gray-100');
+
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type === "application/pdf") {
+                    document.getElementById('file-upload').files = files;
+                    showSelectedFile(file.name);
+                    document.getElementById('upload-form').requestSubmit();
+                } else {
+                    alert("Please upload a PDF file.");
+                }
+            }
+        }
+
+        function showSelectedFile(fileName) {
+            document.getElementById('drop-zone-content').classList.add('hidden');
+            document.getElementById('file-selected').classList.remove('hidden');
+            document.getElementById('selected-file-name').textContent = fileName;
+            document.getElementById('drop-zone').classList.add('bg-green-50', 'border-green-500');
+        }
+
+        function resetDropZone() {
+            document.getElementById('drop-zone-content').classList.remove('hidden');
+            document.getElementById('file-selected').classList.add('hidden');
+            document.getElementById('drop-zone').classList.remove('bg-green-50', 'border-green-500');
+            document.getElementById('file-upload').value = '';
+        }
+
+        // Set up the event listeners for drag and drop
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+
+        // Handle file selection via the file input
+        document.getElementById('file-upload').addEventListener('change', function(e) {
+            handleFiles(this.files);
+        });
+
+        function showDuplicatePopup() {
+            document.getElementById('duplicate-popup').classList.remove('hidden');
+        }
+
+        function closeDuplicatePopup() {
+            document.getElementById('duplicate-popup').classList.add('hidden');
+            resetDropZone();
+        }
     </script>
 </body>
 </html>

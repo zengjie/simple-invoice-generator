@@ -1,3 +1,6 @@
+import json
+import os
+from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -5,14 +8,44 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.lib.units import inch
 from models import Invoice
+from io import BytesIO
 
 def format_amount(amount):
     if amount < 0:
         return f"-${abs(amount):,.2f}"
     return f"${amount:,.2f}"
 
-def generate_invoice(output_file, invoice: Invoice):
-    doc = SimpleDocTemplate(output_file, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+def invoice_to_json(invoice: Invoice):
+    return json.dumps({
+        "invoice_number": invoice.invoice_number,
+        "total": invoice.total,
+        "invoice_date": invoice.form_data.invoice_date.isoformat(),
+        "customer_info": invoice.form_data.customer_info.dict(),
+        "company_info": invoice.form_data.company_info.dict(),
+        "bank_details": invoice.form_data.bank_details.dict(),
+        "items": [item.dict() for item in invoice.items],
+    })
+
+class InvoiceCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        self.invoice_data = kwargs.pop('invoice_data', {})
+        super().__init__(*args, **kwargs)
+
+    def showPage(self):
+        self.setSubject(self.invoice_data)
+        super().showPage()
+
+    def save(self):
+        self.setSubject(self.invoice_data)
+        super().save()
+
+def generate_invoice(output, invoice: Invoice):
+    buffer = BytesIO()
+    
+    # Create the canvas with invoice data
+    invoice_json = invoice_to_json(invoice)
+
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
 
     styles = getSampleStyleSheet()
@@ -115,34 +148,52 @@ def generate_invoice(output_file, invoice: Invoice):
     elements.append(bank_details_table)
 
     # Generate the PDF
-    doc.build(elements)
+    doc.build(elements, canvasmaker=lambda *args, **kwargs: InvoiceCanvas(*args, **kwargs, invoice_data=invoice_json))
+
+    # If output is a file path, write to file; if it's BytesIO, write to it directly
+    if isinstance(output, (str, bytes, os.PathLike)):
+        with open(output, "wb") as f:
+            f.write(buffer.getvalue())
+    elif isinstance(output, BytesIO):
+        output.write(buffer.getvalue())
+    else:
+        raise TypeError("output must be a file path or BytesIO object")
+
+def verify_pdf_metadata(pdf_file):
+    from PyPDF2 import PdfReader
+    reader = PdfReader(pdf_file)
+    if "/Subject" in reader.metadata:
+        print("Invoice data found in PDF metadata:")
+        print(reader.metadata["/Subject"])
+    else:
+        print("Invoice data not found in PDF metadata")
 
 # Update the test function
 if __name__ == "__main__":
     from datetime import date
     from models import InvoiceForm, CustomerInfo, CompanyInfo, BankDetails, Invoice, InvoiceItem
-
     test_form = InvoiceForm(
-        invoice_date=date(2024, 5, 10),
+        invoice_date=date(2023, 7, 15),
+        due_date=date(2023, 8, 15),
         customer_info=CustomerInfo(
-            name="Test Customer",
-            address_line1="123 Test Street",
-            address_line2="Apt 4B",
-            city_country="Test City, Test Country"
+            name="Acme Corporation",
+            address_line1="789 Fictional Avenue",
+            address_line2="Suite 101",
+            city_country="Imaginary City, Wonderland"
         ),
         company_info=CompanyInfo(
-            name="Lebao Interactive Technology Co., Ltd.",
-            tagline="Your Global Game Dev Partner",
-            address_line1="Office E1003, Sanlitun SOHO",
-            address_line2="Chaoyang District",
-            city_country="Beijing, China"
+            name="TechnoVision Solutions Inc.",
+            tagline="Innovating for Tomorrow",
+            address_line1="456 Digital Boulevard",
+            address_line2="Tech Park",
+            city_country="Silicon Valley, USA"
         ),
         bank_details=BankDetails(
-            beneficiary_bank="CHINA MERCHANTS BANK H.O. SHENZHEN",
-            swift_code="CMBCCNBS",
-            beneficiary_name="Lebao Interactive Technology Co., Ltd.",
-            account_number="110959177110001",
-            bank_address="China Merchants Bank Tower NO.7088, Shennan Boulevard, Shenzhen, China"
+            beneficiary_bank="Global Trust Bank",
+            swift_code="GTBKUS33",
+            beneficiary_name="TechnoVision Solutions Inc.",
+            account_number="987654321000",
+            bank_address="1 Financial Plaza, New York, NY 10005, USA"
         )
     )
 
@@ -158,3 +209,5 @@ if __name__ == "__main__":
 
     generate_invoice('test_invoice.pdf', test_invoice)
     print("test_invoice.pdf has been created successfully.")
+
+    verify_pdf_metadata('test_invoice.pdf')

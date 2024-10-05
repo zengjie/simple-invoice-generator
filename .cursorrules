@@ -17,3 +17,6 @@
 ## Code Formatting
 - Use 4 spaces for indentation.
 - Use 80 characters for the maximum line length.
+
+## Problem Solving
+- Don't switch to Javascript solutions when fixing htmx issues.
