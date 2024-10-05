@@ -18,6 +18,7 @@ from models import (
 )
 import json
 from PyPDF2 import PdfReader
+from currency_utils import format_currency, get_currency_options
 
 app = FastAPI()
 
@@ -48,6 +49,7 @@ async def get_invoice(
     account_number: str = Form(...),
     bank_address: str = Form(...),
     items: str = Form(...),
+    currency: str = Form(...),  # Add this line
 ) -> Invoice:
     form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
@@ -72,6 +74,7 @@ async def get_invoice(
             account_number=account_number,
             bank_address=bank_address,
         ),
+        currency=currency,  # Add this line
     )
 
     invoice_items = [InvoiceItem(**item) for item in json.loads(items)]
@@ -82,6 +85,7 @@ async def get_invoice(
         items=invoice_items,
         invoice_number=datetime.now().strftime("%Y%m%d%H%M%S"),
         total=total,
+        currency=currency,  # Add this line
     )
 
 
@@ -91,6 +95,7 @@ async def home(request: Request):
         "index.html",
         {
             "request": request,
+            "currency_options": get_currency_options(),  # Add this line
         },
     )
 
@@ -100,7 +105,11 @@ async def home(request: Request):
 async def generate_invoice_html(
     request: Request, invoice: Invoice = Depends(get_invoice)
 ):
-    context = {"request": request, "invoice": invoice}
+    context = {
+        "request": request,
+        "invoice": invoice,
+        "format_currency": format_currency  # Add this line
+    }
 
     return templates.TemplateResponse("invoice.html", context)
 

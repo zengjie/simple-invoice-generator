@@ -28,14 +28,16 @@ class InvoiceForm(BaseModel):
     customer_info: CustomerInfo
     company_info: CompanyInfo
     bank_details: BankDetails
+    currency: str
 
 class InvoiceItem(BaseModel):
     item: str
     amount: float
-    comments: str = ""
+    comments: Optional[str] = None
 
 class Invoice(BaseModel):
     form_data: InvoiceForm
     items: List[InvoiceItem]
     invoice_number: str
     total: float
+    currency: str

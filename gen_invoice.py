@@ -9,16 +9,17 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.lib.units import inch
 from models import Invoice
 from io import BytesIO
-
-def format_amount(amount):
-    if amount < 0:
-        return f"-${abs(amount):,.2f}"
-    return f"${amount:,.2f}"
+from typing import Optional
+from pydantic import BaseModel
+from currency_utils import format_currency
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 def invoice_to_json(invoice: Invoice):
     return json.dumps({
         "invoice_number": invoice.invoice_number,
         "total": invoice.total,
+        "currency": invoice.currency,
         "invoice_date": invoice.form_data.invoice_date.isoformat(),
         "customer_info": invoice.form_data.customer_info.dict(),
         "company_info": invoice.form_data.company_info.dict(),
@@ -41,8 +42,7 @@ class InvoiceCanvas(canvas.Canvas):
 
 def generate_invoice(output, invoice: Invoice):
     buffer = BytesIO()
-    
-    # Create the canvas with invoice data
+        # Create the canvas with invoice data
     invoice_json = invoice_to_json(invoice)
 
     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
@@ -100,25 +100,39 @@ def generate_invoice(output, invoice: Invoice):
     # Products table
     products_data = [["ITEM", "AMOUNT", "COMMENTS"]]
     for item in invoice.items:
-        products_data.append([item.item, format_amount(item.amount), item.comments])
+        # Wrap the item and comments text in Paragraphs
+        item_paragraph = Paragraph(item.item, styles['BodyText'])
+        comments_paragraph = Paragraph(item.comments, styles['BodyText'])
+        # Use a monospaced font for the amount
+        amount_paragraph = Paragraph(f"<font face='Courier'>{format_currency(item.amount, invoice.currency)}</font>", styles['Right'])
+        products_data.append([item_paragraph, amount_paragraph, comments_paragraph])
 
-    products_table = Table(products_data, colWidths=[2.5*inch, 1*inch, 2.8*inch])
+    products_table = Table(products_data, colWidths=[2.5*inch, 1.3*inch, 2.5*inch])
     products_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.black),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+        ('ALIGN', (2, 1), (2, -1), 'LEFT'),
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('TOPPADDING', (0, 0), (-1, 0), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+        ('FONTNAME', (1, 1), (1, -1), 'Courier'),
+        ('FONTSIZE', (1, 1), (1, -1), 9),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Make header row bold
     ]))
     elements.append(products_table)
 
     # Totals
     elements.append(Spacer(1, 0.25*inch))
-    elements.append(Paragraph(f"<font size=14><b>TOTAL DUE: {format_amount(invoice.total)}</b></font>", styles['Right']))
+    elements.append(Paragraph(f"<font size=14><b>TOTAL DUE: <font face='Courier'>{format_currency(invoice.total, invoice.currency)}</font></b></font>", styles['Right']))
     elements.append(Spacer(1, 1*inch))
 
     # Bank details
@@ -204,7 +218,8 @@ if __name__ == "__main__":
             InvoiceItem(item="Art Assets", amount=2000.00, comments="Character designs"),
         ],
         invoice_number="INV-20240510-001",
-        total=7000.00
+        total=7000.00,
+        currency="USD"  # Explicitly set the currency
     )
 
     generate_invoice('test_invoice.pdf', test_invoice)
