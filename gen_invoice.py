@@ -9,11 +9,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.lib.units import inch
 from models import Invoice
 from io import BytesIO
-from typing import Optional
-from pydantic import BaseModel
 from currency_utils import format_currency
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 
 def invoice_to_json(invoice: Invoice):
     return json.dumps({
