@@ -34,7 +34,7 @@ jinja = Jinja(templates)
 async def get_invoice(
     customer_name: str = Form(...),
     invoice_date: str = Form(...),
-    due_date: str = Form(...),  # Add this line
+    due_date: str = Form(...),
     address_line1: str = Form(...),
     address_line2: str = Form(None),
     city_country: str = Form(...),
@@ -51,7 +51,7 @@ async def get_invoice(
 ) -> Invoice:
     form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
-        due_date=datetime.strptime(due_date, "%Y-%m-%d").date(),  # Add this line
+        due_date=datetime.strptime(due_date, "%Y-%m-%d").date(),
         customer_info=CustomerInfo(
             name=customer_name,
             address_line1=address_line1,
@@ -119,29 +119,16 @@ async def download_invoice(invoice: Invoice = Depends(get_invoice)):
             pdf_buffer, media_type="application/pdf", headers=headers
         )
     except Exception as e:
-        raise
         return JSONResponse(status_code=500, content={"error": str(e)})
-
-
-@app.get("/customer-form")
-async def customer_form(request: Request):
-    return templates.TemplateResponse("customer_form.html", {"request": request})
-
-
-@app.get("/company-form")
-async def company_form(request: Request):
-    return templates.TemplateResponse("company_form.html", {"request": request})
-
-
-@app.get("/bank-form")
-async def bank_form(request: Request):
-    return templates.TemplateResponse("bank_form.html", {"request": request})
 
 
 @app.post("/upload-invoice")
 async def upload_invoice(file: UploadFile = File(...)):
     if not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+        return {
+            "success": False,
+            "message": "Only PDF files are allowed",
+        }
 
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         content = await file.read()
@@ -155,9 +142,15 @@ async def upload_invoice(file: UploadFile = File(...)):
                 invoice_data = json.loads(metadata["/Subject"])
                 return {"success": True, "data": invoice_data}
             else:
-                return {"success": False, "message": "No invoice data found in the PDF's Subject metadata"}
+                return {
+                    "success": False,
+                    "message": "No invoice data found in the PDF's Subject metadata",
+                }
         except json.JSONDecodeError:
-            return {"success": False, "message": "Invalid JSON data in PDF's Subject metadata"}
+            return {
+                "success": False,
+                "message": "Invalid JSON data in PDF's Subject metadata",
+            }
         except Exception as e:
             return {"success": False, "message": f"Error processing PDF: {str(e)}"}
         finally:
