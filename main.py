@@ -98,6 +98,7 @@ async def home(request: Request):
         {
             "request": request,
             "currency_options": get_currency_options(),  # Add this line
+            "script_version": int(datetime.now().timestamp()),  # Add this line
         },
     )
 
