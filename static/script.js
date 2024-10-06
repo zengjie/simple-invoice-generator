@@ -4,11 +4,12 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFromLocalStorage();
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('invoice_date').value = today;
-    document.getElementById('due_date').value = today; // Set due date to today by default
+    updateDueDate(); // This will set the initial due date
     updateSummaries();
     renderInvoiceItems();
     updateInvoicePreview(); // Add this line to update the preview when the page loads
     setupInfoToggle();
+    setupEventListeners();
 });
 
 function updateSummaries() {
@@ -332,3 +333,95 @@ function setupInfoToggle() {
         }
     });
 }
+
+// Add this function to your script.js file
+function updateDueDate() {
+    const invoiceDateInput = document.getElementById('invoice_date');
+    const dueDateInput = document.getElementById('due_date');
+    const dueDateError = document.getElementById('due-date-error');
+
+    if (invoiceDateInput.value) {
+        const invoiceDate = new Date(invoiceDateInput.value);
+        let dueDate = new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), 26);
+
+        // If the invoice date is on or after the 26th, set due date to the next day
+        if (invoiceDate.getDate() >= 26) {
+            dueDate = new Date(invoiceDate.getTime());
+            dueDate.setDate(invoiceDate.getDate() + 1);
+        }
+
+        // Format the date as YYYY-MM-DD for the input field
+        const formattedDueDate = dueDate.toISOString().split('T')[0];
+        
+        // Only apply the highlight if the due date has changed
+        if (dueDateInput.value !== formattedDueDate) {
+            dueDateInput.value = formattedDueDate;
+            
+            // Add the highlight class
+            dueDateInput.classList.add('highlight-fade');
+            
+            // Remove the highlight class after the animation completes
+            setTimeout(() => {
+                dueDateInput.classList.remove('highlight-fade');
+            }, 3000); // 3000ms = 3 seconds, matching our CSS animation duration
+        }
+    }
+
+    validateDueDate();
+}
+
+function validateDueDate() {
+    const invoiceDateInput = document.getElementById('invoice_date');
+    const dueDateInput = document.getElementById('due_date');
+    const dueDateError = document.getElementById('due-date-error');
+
+    if (invoiceDateInput.value && dueDateInput.value) {
+        const invoiceDate = new Date(invoiceDateInput.value);
+        const dueDate = new Date(dueDateInput.value);
+
+        if (dueDate < invoiceDate) {
+            dueDateInput.classList.add('border-red-500');
+            dueDateError.textContent = 'Due date cannot be earlier than the invoice date.';
+            dueDateError.classList.remove('hidden');
+        } else {
+            dueDateInput.classList.remove('border-red-500');
+            dueDateError.classList.add('hidden');
+        }
+    }
+}
+
+function setupEventListeners() {
+    // Remove existing event listeners before adding new ones
+    const invoiceDateInput = document.getElementById('invoice_date');
+    const dueDateInput = document.getElementById('due_date');
+    
+    invoiceDateInput.removeEventListener('change', handleInvoiceDateChange);
+    dueDateInput.removeEventListener('change', handleDueDateChange);
+
+    // Add new event listeners
+    invoiceDateInput.addEventListener('change', handleInvoiceDateChange);
+    dueDateInput.addEventListener('change', handleDueDateChange);
+}
+
+function handleInvoiceDateChange() {
+    updateDueDate();
+    updateInvoicePreview();
+}
+
+function handleDueDateChange() {
+    validateDueDate();
+    updateInvoicePreview();
+}
+
+// Make sure to call setupEventListeners() when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadFromLocalStorage();
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('invoice_date').value = today;
+    updateDueDate(); // This will set the initial due date
+    updateSummaries();
+    renderInvoiceItems();
+    updateInvoicePreview();
+    setupInfoToggle();
+    setupEventListeners();
+});
