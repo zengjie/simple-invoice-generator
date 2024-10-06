@@ -77,7 +77,7 @@ def generate_invoice(output, invoice: Invoice):
         [Paragraph("<b>BILL TO:</b>", styles['Normal']), "", Paragraph("<b>INVOICE DETAILS</b>", styles['Right'])],
         [Paragraph(f"<font size=12><b>{invoice.form_data.customer_info.name}</b></font>", styles['Normal']), "", Paragraph(f"<b>INVOICE NO: {invoice.invoice_number}</b>", styles['Right'])],
         [invoice.form_data.customer_info.address_line1, "", f"INVOICE DATE: {invoice.form_data.invoice_date}"],
-        [invoice.form_data.customer_info.address_line2, "", f"DUE DATE: {invoice.form_data.invoice_date}"],
+        [invoice.form_data.customer_info.address_line2, "", f"DUE DATE: {invoice.form_data.due_date}"],
         [invoice.form_data.customer_info.city_country, "", ""]
     ]
     invoice_table = Table(invoice_data, colWidths=[2.8*inch, 1*inch, 2.6*inch])
