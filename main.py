@@ -31,6 +31,8 @@ templates = Jinja2Templates(directory="templates")
 # Create a FastHX Jinja instance
 jinja = Jinja(templates)
 
+# Generate a version based on the last modification time of script.js
+script_version = os.environ.get("SCRIPT_VERSION", "1")
 
 async def get_invoice(
     customer_name: str = Form(...),

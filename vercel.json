@@ -11,5 +11,8 @@
             "src": "/(.*)",
             "dest": "main.py"
         }
-    ]
+    ],
+    "buildEnv": {
+        "SCRIPT_VERSION": "$(date +%s)"
+    }
 }
