@@ -2,9 +2,6 @@ let invoiceItems = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     loadFromLocalStorage();
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('invoice_date').value = today;
-    updateDueDate(); // This will set the initial due date
     updateSummaries();
     renderInvoiceItems();
     updateInvoicePreview(); // Add this line to update the preview when the page loads
@@ -170,7 +167,7 @@ function loadFromLocalStorage() {
             }
         });
         invoiceItems = data.invoiceItems || [];
-        updateInvoiceItemsInput(); // Add this line to ensure the hidden input is updated
+        updateInvoiceItemsInput();
     }
 }
 
@@ -412,16 +409,3 @@ function handleDueDateChange() {
     validateDueDate();
     updateInvoicePreview();
 }
-
-// Make sure to call setupEventListeners() when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    loadFromLocalStorage();
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('invoice_date').value = today;
-    updateDueDate(); // This will set the initial due date
-    updateSummaries();
-    renderInvoiceItems();
-    updateInvoicePreview();
-    setupInfoToggle();
-    setupEventListeners();
-});
