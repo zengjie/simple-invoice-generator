@@ -14,6 +14,36 @@
         .highlight-fade {
             animation: highlightFade 3s ease-out;
         }
+        
+        /* Update print-specific styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #invoice-preview, #invoice-preview * {
+                visibility: visible;
+            }
+            #invoice-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            /* Hide specific elements within the invoice preview */
+            #invoice-preview #download-button,
+            #invoice-preview #download-result {
+                display: none !important;
+            }
+            /* Remove any potential background colors, borders, or shadows */
+            #invoice-preview, #invoice-preview * {
+                background-color: white !important;
+                border-color: black !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
@@ -143,7 +173,7 @@
         <!-- Main Content -->
         <div class="w-2/3 p-8 overflow-y-auto">            
             <!-- Invoice Preview -->
-            <div id="invoice-preview" class="bg-white p-8 rounded shadow-md"></div>
+            <div id="invoice-preview" class="bg-white p-8"></div>
         </div>
     </div>
 
