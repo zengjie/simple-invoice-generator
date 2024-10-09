@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateInvoicePreview(); // Add this line to update the preview when the page loads
     setupInfoToggle();
     setupEventListeners();
+    ensureExchangeRateVisibility(); // Add this line
 });
 
 function updateSummaries() {
@@ -141,9 +142,14 @@ function updateInvoiceItem(index, field, value) {
 
 function updateSecondCurrencyAmount(index) {
     const secondCurrency = document.getElementById('second_currency').value;
-    const exchangeRate = parseFloat(document.getElementById('exchange_rate').value);
-    if (secondCurrency && !isNaN(exchangeRate)) {
-        invoiceItems[index].second_currency_amount = invoiceItems[index].amount * exchangeRate;
+    const exchangeRate = document.getElementById('exchange_rate').value;
+    if (secondCurrency && exchangeRate !== '') {
+        const rate = parseFloat(exchangeRate);
+        if (!isNaN(rate)) {
+            invoiceItems[index].second_currency_amount = invoiceItems[index].amount * rate;
+        } else {
+            delete invoiceItems[index].second_currency_amount;
+        }
     } else {
         delete invoiceItems[index].second_currency_amount;
     }
@@ -179,6 +185,7 @@ function loadFromLocalStorage() {
         });
         invoiceItems = data.invoiceItems || [];
         updateInvoiceItemsInput();
+        ensureExchangeRateVisibility(); // Add this line
     }
 }
 
@@ -239,6 +246,18 @@ function populateFormWithUploadedData(data) {
         comments: item.comments
     }));
     renderInvoiceItems();
+    
+    // Set the currency and second currency
+    document.getElementById('currency').value = data.currency;
+    document.getElementById('second_currency').value = data.second_currency || '';
+    
+    // Set the exchange rate if available
+    if (data.exchange_rate) {
+        document.getElementById('exchange_rate').value = data.exchange_rate;
+    }
+
+    // Ensure exchange rate visibility is updated
+    ensureExchangeRateVisibility();
     
     updateSummaries();
     updateInvoicePreview();            
@@ -414,8 +433,9 @@ function setupEventListeners() {
     const exchangeRateContainer = document.getElementById('exchange_rate_container');
     const exchangeRateInput = document.getElementById('exchange_rate');
 
-    secondCurrencySelect.addEventListener('change', function() {
-        if (this.value) {
+    // Function to update exchange rate visibility
+    function updateExchangeRateVisibility() {
+        if (secondCurrencySelect.value) {
             exchangeRateContainer.classList.remove('hidden');
             exchangeRateInput.required = true;
         } else {
@@ -423,6 +443,13 @@ function setupEventListeners() {
             exchangeRateInput.required = false;
             exchangeRateInput.value = '';
         }
+    }
+
+    // Call the function initially to set the correct state
+    updateExchangeRateVisibility();
+
+    secondCurrencySelect.addEventListener('change', function() {
+        updateExchangeRateVisibility();
         updateAllSecondCurrencyAmounts();
         updateInvoicePreview();
     });
@@ -444,5 +471,29 @@ function handleDueDateChange() {
 }
 
 function updateAllSecondCurrencyAmounts() {
-    invoiceItems.forEach((item, index) => updateSecondCurrencyAmount(index));
+    const secondCurrency = document.getElementById('second_currency').value;
+    const exchangeRate = document.getElementById('exchange_rate').value;
+    if (secondCurrency && exchangeRate !== '') {
+        const rate = parseFloat(exchangeRate);
+        if (!isNaN(rate)) {
+            invoiceItems.forEach((item, index) => updateSecondCurrencyAmount(index));
+        } else {
+            invoiceItems.forEach(item => delete item.second_currency_amount);
+        }
+    } else {
+        invoiceItems.forEach(item => delete item.second_currency_amount);
+    }
+    updateInvoiceItemsInput();
+}
+
+// Add this function to ensure the exchange rate input is visible when loading from local storage
+function ensureExchangeRateVisibility() {
+    const secondCurrencySelect = document.getElementById('second_currency');
+    const exchangeRateContainer = document.getElementById('exchange_rate_container');
+    const exchangeRateInput = document.getElementById('exchange_rate');
+
+    if (secondCurrencySelect.value) {
+        exchangeRateContainer.classList.remove('hidden');
+        exchangeRateInput.required = true;
+    }
 }

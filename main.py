@@ -19,6 +19,7 @@ from models import (
 import json
 from PyPDF2 import PdfReader
 from currency_utils import format_currency, get_currency_options
+from typing import Optional
 
 app = FastAPI()
 
@@ -53,8 +54,15 @@ async def get_invoice(
     items: str = Form(...),
     currency: str = Form(...),  # Add this line
     second_currency: str = Form(None),
-    exchange_rate: float = Form(None),
+    exchange_rate: Optional[str] = Form(None),  # Change this line
 ) -> Invoice:
+    exchange_rate_float = None
+    if exchange_rate:
+        try:
+            exchange_rate_float = float(exchange_rate)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid exchange rate")
+
     form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
         due_date=datetime.strptime(due_date, "%Y-%m-%d").date(),
@@ -80,20 +88,20 @@ async def get_invoice(
         ),
         currency=currency,  # Add this line
         second_currency=second_currency,
-        exchange_rate=exchange_rate,
+        exchange_rate=exchange_rate_float,
     )
 
     invoice_items = []
     for item in json.loads(items):
         invoice_item = InvoiceItem(**item)
-        if second_currency and exchange_rate:
-            invoice_item.second_currency_amount = invoice_item.amount * exchange_rate
+        if second_currency and exchange_rate_float:
+            invoice_item.second_currency_amount = invoice_item.amount * exchange_rate_float
         invoice_items.append(invoice_item)
 
     total = sum(item.amount for item in invoice_items)
     second_currency_total = None
-    if second_currency and exchange_rate:
-        second_currency_total = total * exchange_rate
+    if second_currency and exchange_rate_float:
+        second_currency_total = total * exchange_rate_float
 
     return Invoice(
         form_data=form_data,
