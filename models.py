@@ -31,6 +31,7 @@ class InvoiceForm(BaseModel):
     currency: str
     second_currency: Optional[str] = None
     exchange_rate: Optional[float] = None
+    additional_notes: Optional[str] = None  # Add this line
 
 class InvoiceItem(BaseModel):
     item: str

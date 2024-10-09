@@ -85,6 +85,13 @@
                 <p><strong>Beneficiary's A/C No.:</strong> {{ invoice.form_data.bank_details.account_number }}</p>
                 <p><strong>Bank Address:</strong> {{ invoice.form_data.bank_details.bank_address }}</p>
             </div>
+
+            {% if invoice.form_data.additional_notes %}
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2">Additional Notes</h3>
+                    <p class="text-sm whitespace-pre-wrap">{{ invoice.form_data.additional_notes }}</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 

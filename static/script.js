@@ -170,6 +170,7 @@ function saveToLocalStorage() {
     const formData = new FormData(document.getElementById('invoice-form'));
     const data = Object.fromEntries(formData.entries());
     data.invoiceItems = invoiceItems;
+    data.additional_notes = document.getElementById('additional_notes').value;  // Add this line
     localStorage.setItem('invoiceData', JSON.stringify(data));
 }
 
@@ -185,7 +186,10 @@ function loadFromLocalStorage() {
         });
         invoiceItems = data.invoiceItems || [];
         updateInvoiceItemsInput();
-        ensureExchangeRateVisibility(); // Add this line
+        ensureExchangeRateVisibility();
+        
+        // Add this line to load additional notes
+        document.getElementById('additional_notes').value = data.additional_notes || '';
     }
 }
 
@@ -259,8 +263,11 @@ function populateFormWithUploadedData(data) {
     // Ensure exchange rate visibility is updated
     ensureExchangeRateVisibility();
     
+    // Add this line to populate additional notes
+    document.getElementById('additional_notes').value = data.additional_notes || '';
+    
     updateSummaries();
-    updateInvoicePreview();            
+    updateInvoicePreview();
 }
 
 // Add these new functions to handle drag and drop

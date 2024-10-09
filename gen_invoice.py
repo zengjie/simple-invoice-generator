@@ -180,6 +180,13 @@ def generate_invoice(output, invoice: Invoice):
     ]))
     elements.append(bank_details_table)
 
+    # Add this after the bank details section
+    if invoice.form_data.additional_notes:
+        elements.append(Spacer(1, 0.5*inch))
+        elements.append(Paragraph("<font size=12><b>ADDITIONAL NOTES</b></font>", styles['Normal']))
+        elements.append(Spacer(1, 0.1*inch))
+        elements.append(Paragraph(invoice.form_data.additional_notes, styles['BodyText']))
+
     # Generate the PDF
     doc.build(elements, canvasmaker=lambda *args, **kwargs: InvoiceCanvas(*args, **kwargs, invoice_data=invoice_json))
 

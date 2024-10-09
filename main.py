@@ -55,6 +55,7 @@ async def get_invoice(
     currency: str = Form(...),  # Add this line
     second_currency: str = Form(None),
     exchange_rate: Optional[str] = Form(None),  # Change this line
+    additional_notes: Optional[str] = Form(None),  # Add this line
 ) -> Invoice:
     exchange_rate_float = None
     if exchange_rate:
@@ -89,6 +90,7 @@ async def get_invoice(
         currency=currency,  # Add this line
         second_currency=second_currency,
         exchange_rate=exchange_rate_float,
+        additional_notes=additional_notes,  # Add this line
     )
 
     invoice_items = []
