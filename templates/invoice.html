@@ -68,6 +68,7 @@
                         {{ format_currency(invoice.second_currency_total, invoice.second_currency) }}
                     </p>
                 {% endif %}
+                <p class="text-sm text-gray-600 mt-2">This invoice should be paid in {{ invoice.currency }}.</p>
             </div>
 
             {% if invoice.form_data.exchange_rate %}

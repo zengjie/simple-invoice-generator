@@ -142,8 +142,11 @@ def generate_invoice(output, invoice: Invoice):
     # Totals
     elements.append(Spacer(1, 0.25*inch))
     elements.append(Paragraph(f"<font size=14><b>TOTAL DUE: <font face='Courier'>{format_currency(invoice.total, invoice.currency)}</font></b></font>", styles['Right']))
+    elements.append(Spacer(1, 0.1*inch))  # Add a small spacer
     if invoice.second_currency and invoice.second_currency_total:
         elements.append(Paragraph(f"<font size=12><b><font face='Courier'>({format_currency(invoice.second_currency_total, invoice.second_currency)})</font></b></font>", styles['Right']))
+        elements.append(Spacer(1, 0.1*inch))  # Add a small spacer
+    elements.append(Paragraph(f"<font size=10 color='gray'>This invoice should be paid in {invoice.currency}.</font>", styles['Right']))
     elements.append(Spacer(1, 0.25*inch))
 
     # Exchange rate
