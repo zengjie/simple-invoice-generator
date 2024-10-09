@@ -16,11 +16,14 @@ def invoice_to_json(invoice: Invoice):
         "invoice_number": invoice.invoice_number,
         "total": invoice.total,
         "currency": invoice.currency,
+        "second_currency": invoice.second_currency,
+        "second_currency_total": invoice.second_currency_total,
         "invoice_date": invoice.form_data.invoice_date.isoformat(),
         "customer_info": invoice.form_data.customer_info.dict(),
         "company_info": invoice.form_data.company_info.dict(),
         "bank_details": invoice.form_data.bank_details.dict(),
         "items": [item.dict() for item in invoice.items],
+        "exchange_rate": invoice.form_data.exchange_rate,
     })
 
 class InvoiceCanvas(canvas.Canvas):
@@ -38,7 +41,6 @@ class InvoiceCanvas(canvas.Canvas):
 
 def generate_invoice(output, invoice: Invoice):
     buffer = BytesIO()
-        # Create the canvas with invoice data
     invoice_json = invoice_to_json(invoice)
 
     doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
@@ -94,16 +96,27 @@ def generate_invoice(output, invoice: Invoice):
     elements.append(Spacer(1, 0.5*inch))
 
     # Products table
-    products_data = [["ITEM", "AMOUNT", "COMMENTS"]]
-    for item in invoice.items:
-        # Wrap the item and comments text in Paragraphs
-        item_paragraph = Paragraph(item.item, styles['BodyText'])
-        comments_paragraph = Paragraph(item.comments, styles['BodyText'])
-        # Use a monospaced font for the amount
-        amount_paragraph = Paragraph(f"<font face='Courier'>{format_currency(item.amount, invoice.currency)}</font>", styles['Right'])
-        products_data.append([item_paragraph, amount_paragraph, comments_paragraph])
+    products_data = [["ITEM", f"AMOUNT ({invoice.currency})"]]
+    if invoice.second_currency:
+        products_data[0].append(f"AMOUNT ({invoice.second_currency})")
+    products_data[0].append("COMMENTS")
 
-    products_table = Table(products_data, colWidths=[2.5*inch, 1.3*inch, 2.5*inch])
+    for item in invoice.items:
+        row = [
+            Paragraph(item.item, styles['BodyText']),
+            Paragraph(f"{item.amount:,.2f}", styles['Right'])
+        ]
+        if invoice.second_currency:
+            row.append(Paragraph(f"{item.second_currency_amount:,.2f}", styles['Right']))
+        row.append(Paragraph(item.comments, styles['BodyText']))
+        products_data.append(row)
+
+    if invoice.second_currency:
+        col_widths = [2.1*inch, 1.1*inch, 1.1*inch, 2.3*inch]
+    else:
+        col_widths = [2.5*inch, 1.3*inch, 2.8*inch]
+
+    products_table = Table(products_data, colWidths=col_widths)
     products_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.black),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -129,7 +142,14 @@ def generate_invoice(output, invoice: Invoice):
     # Totals
     elements.append(Spacer(1, 0.25*inch))
     elements.append(Paragraph(f"<font size=14><b>TOTAL DUE: <font face='Courier'>{format_currency(invoice.total, invoice.currency)}</font></b></font>", styles['Right']))
-    elements.append(Spacer(1, 1*inch))
+    if invoice.second_currency and invoice.second_currency_total:
+        elements.append(Paragraph(f"<font size=12><b><font face='Courier'>({format_currency(invoice.second_currency_total, invoice.second_currency)})</font></b></font>", styles['Right']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Exchange rate
+    if invoice.form_data.exchange_rate:
+        elements.append(Paragraph(f"Exchange rate: 1 {invoice.currency} = {invoice.form_data.exchange_rate} {invoice.second_currency}", styles['Right']))
+    elements.append(Spacer(1, 0.5*inch))
 
     # Bank details
     bank_details = invoice.form_data.bank_details
@@ -204,18 +224,23 @@ if __name__ == "__main__":
             beneficiary_name="TechnoVision Solutions Inc.",
             account_number="987654321000",
             bank_address="1 Financial Plaza, New York, NY 10005, USA"
-        )
+        ),
+        currency="USD",
+        second_currency="EUR",
+        exchange_rate=0.85
     )
 
     test_invoice = Invoice(
         form_data=test_form,
         items=[
-            InvoiceItem(item="Game Development Services", amount=5000.00, comments="Project milestone 1"),
-            InvoiceItem(item="Art Assets", amount=2000.00, comments="Character designs"),
+            InvoiceItem(item="Game Development Services", amount=5000.00, comments="Project milestone 1", second_currency_amount=4250.00),
+            InvoiceItem(item="Art Assets", amount=2000.00, comments="Character designs", second_currency_amount=1700.00),
         ],
         invoice_number="INV-20240510-001",
         total=7000.00,
-        currency="USD"  # Explicitly set the currency
+        currency="USD",
+        second_currency="EUR",
+        second_currency_total=5950.00
     )
 
     generate_invoice('test_invoice.pdf', test_invoice)

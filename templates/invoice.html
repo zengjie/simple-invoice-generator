@@ -36,7 +36,10 @@
                 <thead>
                     <tr class="bg-black text-white">
                         <th class="py-2 px-4 text-left">ITEM</th>
-                        <th class="py-2 px-4 text-right">AMOUNT</th>
+                        <th class="py-2 px-4 text-right">AMOUNT ({{ invoice.currency }})</th>
+                        {% if invoice.second_currency %}
+                            <th class="py-2 px-4 text-right">AMOUNT ({{ invoice.second_currency }})</th>
+                        {% endif %}
                         <th class="py-2 px-4 text-left">COMMENTS</th>
                     </tr>
                 </thead>
@@ -45,8 +48,13 @@
                     <tr class="border-b border-gray-200">
                         <td class="py-2 px-4">{{ item.item }}</td>
                         <td class="py-2 px-4 text-right">
-                            {{ format_currency(item.amount, invoice.currency) }}
+                            {{ "{:,.2f}".format(item.amount) }}
                         </td>
+                        {% if invoice.second_currency %}
+                            <td class="py-2 px-4 text-right">
+                                {{ "{:,.2f}".format(item.second_currency_amount) }}
+                            </td>
+                        {% endif %}
                         <td class="py-2 px-4">{{ item.comments }}</td>
                     </tr>
                     {% endfor %}
@@ -55,7 +63,18 @@
             
             <div class="text-right mb-6">
                 <p class="text-xl font-bold">TOTAL DUE: {{ format_currency(invoice.total, invoice.currency) }}</p>
+                {% if invoice.second_currency and invoice.second_currency_total %}
+                    <p class="text-lg">
+                        {{ format_currency(invoice.second_currency_total, invoice.second_currency) }}
+                    </p>
+                {% endif %}
             </div>
+
+            {% if invoice.form_data.exchange_rate %}
+                <p class="text-sm text-gray-600 mb-6 text-right">
+                    Exchange rate: 1 {{ invoice.currency }} = {{ invoice.form_data.exchange_rate }} {{ invoice.second_currency }}
+                </p>
+            {% endif %}
 
             <div class="mb-6">
                 <h3 class="text-lg font-semibold mb-2">BANK DETAILS</h3>

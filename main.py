@@ -52,6 +52,8 @@ async def get_invoice(
     bank_address: str = Form(...),
     items: str = Form(...),
     currency: str = Form(...),  # Add this line
+    second_currency: str = Form(None),
+    exchange_rate: float = Form(None),
 ) -> Invoice:
     form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
@@ -77,10 +79,21 @@ async def get_invoice(
             bank_address=bank_address,
         ),
         currency=currency,  # Add this line
+        second_currency=second_currency,
+        exchange_rate=exchange_rate,
     )
 
-    invoice_items = [InvoiceItem(**item) for item in json.loads(items)]
+    invoice_items = []
+    for item in json.loads(items):
+        invoice_item = InvoiceItem(**item)
+        if second_currency and exchange_rate:
+            invoice_item.second_currency_amount = invoice_item.amount * exchange_rate
+        invoice_items.append(invoice_item)
+
     total = sum(item.amount for item in invoice_items)
+    second_currency_total = None
+    if second_currency and exchange_rate:
+        second_currency_total = total * exchange_rate
 
     return Invoice(
         form_data=form_data,
@@ -88,6 +101,8 @@ async def get_invoice(
         invoice_number=datetime.now().strftime("%Y%m%d%H%M%S"),
         total=total,
         currency=currency,  # Add this line
+        second_currency=second_currency,
+        second_currency_total=second_currency_total,
     )
 
 

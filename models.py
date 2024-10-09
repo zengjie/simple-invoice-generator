@@ -29,11 +29,14 @@ class InvoiceForm(BaseModel):
     company_info: CompanyInfo
     bank_details: BankDetails
     currency: str
+    second_currency: Optional[str] = None
+    exchange_rate: Optional[float] = None
 
 class InvoiceItem(BaseModel):
     item: str
     amount: float
     comments: Optional[str] = None
+    second_currency_amount: Optional[float] = None
 
 class Invoice(BaseModel):
     form_data: InvoiceForm
@@ -41,3 +44,5 @@ class Invoice(BaseModel):
     invoice_number: str
     total: float
     currency: str
+    second_currency: Optional[str] = None
+    second_currency_total: Optional[float] = None

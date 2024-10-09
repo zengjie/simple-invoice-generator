@@ -133,9 +133,20 @@ function addInvoiceItem() {
 
 function updateInvoiceItem(index, field, value) {
     invoiceItems[index][field] = field === 'amount' ? parseFloat(value) : value;
+    updateSecondCurrencyAmount(index);
     updateInvoiceItemsInput();
-    updateInvoicePreview(); // Add this line to update the preview when an item is updated
+    updateInvoicePreview();
     saveToLocalStorage();
+}
+
+function updateSecondCurrencyAmount(index) {
+    const secondCurrency = document.getElementById('second_currency').value;
+    const exchangeRate = parseFloat(document.getElementById('exchange_rate').value);
+    if (secondCurrency && !isNaN(exchangeRate)) {
+        invoiceItems[index].second_currency_amount = invoiceItems[index].amount * exchangeRate;
+    } else {
+        delete invoiceItems[index].second_currency_amount;
+    }
 }
 
 function removeInvoiceItem(index) {
@@ -398,6 +409,28 @@ function setupEventListeners() {
     // Add new event listeners
     invoiceDateInput.addEventListener('change', handleInvoiceDateChange);
     dueDateInput.addEventListener('change', handleDueDateChange);
+
+    const secondCurrencySelect = document.getElementById('second_currency');
+    const exchangeRateContainer = document.getElementById('exchange_rate_container');
+    const exchangeRateInput = document.getElementById('exchange_rate');
+
+    secondCurrencySelect.addEventListener('change', function() {
+        if (this.value) {
+            exchangeRateContainer.classList.remove('hidden');
+            exchangeRateInput.required = true;
+        } else {
+            exchangeRateContainer.classList.add('hidden');
+            exchangeRateInput.required = false;
+            exchangeRateInput.value = '';
+        }
+        updateAllSecondCurrencyAmounts();
+        updateInvoicePreview();
+    });
+
+    exchangeRateInput.addEventListener('change', function() {
+        updateAllSecondCurrencyAmounts();
+        updateInvoicePreview();
+    });
 }
 
 function handleInvoiceDateChange() {
@@ -408,4 +441,8 @@ function handleInvoiceDateChange() {
 function handleDueDateChange() {
     validateDueDate();
     updateInvoicePreview();
+}
+
+function updateAllSecondCurrencyAmounts() {
+    invoiceItems.forEach((item, index) => updateSecondCurrencyAmount(index));
 }
