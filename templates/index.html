@@ -65,11 +65,24 @@
                 but it's not stored there. After the PDF is created, the data is discarded from the server. 
             </p>
             <form id="invoice-form" hx-post="/generate-invoice" hx-target="#invoice-preview" hx-trigger="change" class="flex-grow">
+                <!-- Invoice Type -->
+                <div class="mb-4">
+                    <label for="invoice_type" class="block mb-2">Invoice Type:</label>
+                    <select id="invoice_type" name="invoice_type" class="w-full px-3 py-2 border rounded">
+                        <option value="standard">Standard Invoice</option>
+                        <option value="gst">GST Invoice (Singapore)</option>
+                    </select>
+                </div>
                 <!-- Customer Information -->
                 <input type="hidden" name="customer_name" id="customer_name" value="John Doe">
                 <input type="hidden" name="address_line1" id="address_line1" value="123 Main St">
                 <input type="hidden" name="address_line2" id="address_line2" value="Apt 4B">
                 <input type="hidden" name="city_country" id="city_country" value="New York, USA">
+                <!-- Customer GST Number -->
+                <div class="mb-4" id="customer_gst_number_container">
+                    <label for="customer_gst_number" class="block mb-2">Customer GST Registration Number:</label>
+                    <input type="text" id="customer_gst_number" name="customer_gst_number" class="w-full px-3 py-2 border rounded">
+                </div>
 
                 <!-- Company Information -->
                 <input type="hidden" name="company_name" id="company_name" value="Acme Corporation">
@@ -77,6 +90,11 @@
                 <input type="hidden" name="company_address_line1" id="company_address_line1" value="456 Tech Lane">
                 <input type="hidden" name="company_address_line2" id="company_address_line2" value="Suite 789">
                 <input type="hidden" name="company_city_country" id="company_city_country" value="Silicon Valley, CA 94000">
+                <!-- Company GST Number -->
+                <div class="mb-4" id="gst_number_container">
+                    <label for="company_gst_number" class="block mb-2">Company GST Registration Number:</label>
+                    <input type="text" id="company_gst_number" name="company_gst_number" class="w-full px-3 py-2 border rounded">
+                </div>
 
                 <!-- Bank Information -->
                 <input type="hidden" name="bank_name" id="bank_name" value="Global Bank">
@@ -86,6 +104,11 @@
 
                 <!-- Invoice Items -->
                 <input type="hidden" name="items" id="invoice_items" value='[]'>
+                <!-- GST Rate (only for GST Invoice) -->
+                <div class="mb-4" id="gst_rate_container" style="display:none;">
+                    <label for="gst_rate" class="block mb-2">GST Rate (%):</label>
+                    <input type="number" id="gst_rate" name="gst_rate" step="0.01" min="0" max="100" class="w-full px-3 py-2 border rounded" placeholder="e.g. 8">
+                </div>
 
                 <!-- Edit Sections -->
                 <div class="mb-6 space-y-4">
@@ -137,6 +160,7 @@
                                 onclick="addInvoiceItem()">
                             Add Item
                         </button>
+                        <!-- GST Invoice extra fields for items will be handled by JS in script.js -->
                     </div>
                 </div>
 

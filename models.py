@@ -8,12 +8,14 @@ class CompanyInfo(BaseModel):
     address_line1: str
     address_line2: Optional[str] = ""
     city_country: str
+    gst_number: Optional[str] = None
 
 class CustomerInfo(BaseModel):
     name: str
     address_line1: str
     address_line2: Optional[str] = ""
     city_country: str
+    gst_number: Optional[str] = None
 
 class BankDetails(BaseModel):
     beneficiary_bank: str
@@ -24,20 +26,24 @@ class BankDetails(BaseModel):
 
 class InvoiceForm(BaseModel):
     invoice_date: date
-    due_date: date
+    due_date: Optional[date] = None
     customer_info: CustomerInfo
     company_info: CompanyInfo
     bank_details: BankDetails
     currency: str
     second_currency: Optional[str] = None
     exchange_rate: Optional[float] = None
-    additional_notes: Optional[str] = None  # Add this line
+    additional_notes: Optional[str] = None
+    invoice_type: str = "standard"
+    gst_rate: Optional[float] = None
 
 class InvoiceItem(BaseModel):
     item: str
     amount: float
     comments: Optional[str] = None
     second_currency_amount: Optional[float] = None
+    payment_date: Optional[str] = None
+    payment_number: Optional[str] = None
 
 class Invoice(BaseModel):
     form_data: InvoiceForm

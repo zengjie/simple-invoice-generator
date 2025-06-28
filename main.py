@@ -38,24 +38,28 @@ script_version = os.environ.get("SCRIPT_VERSION", "1")
 async def get_invoice(
     customer_name: str = Form(...),
     invoice_date: str = Form(...),
-    due_date: str = Form(...),
+    due_date: str = Form(None),
     address_line1: str = Form(...),
     address_line2: str = Form(None),
     city_country: str = Form(...),
+    customer_gst_number: str = Form(None),
     company_name: str = Form(...),
     company_tagline: str = Form(...),
     company_address_line1: str = Form(...),
     company_address_line2: str = Form(None),
     company_city_country: str = Form(...),
+    company_gst_number: str = Form(None),
     bank_name: str = Form(...),
     swift_code: str = Form(...),
     account_number: str = Form(...),
     bank_address: str = Form(...),
     items: str = Form(...),
-    currency: str = Form(...),  # Add this line
+    currency: str = Form(...),
     second_currency: str = Form(None),
-    exchange_rate: Optional[str] = Form(None),  # Change this line
-    additional_notes: Optional[str] = Form(None),  # Add this line
+    exchange_rate: Optional[str] = Form(None),
+    additional_notes: Optional[str] = Form(None),
+    invoice_type: str = Form("standard"),
+    gst_rate: Optional[str] = Form(None),
 ) -> Invoice:
     exchange_rate_float = None
     if exchange_rate:
@@ -64,14 +68,28 @@ async def get_invoice(
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid exchange rate")
 
+    gst_rate_float = None
+    if gst_rate:
+        try:
+            gst_rate_float = float(gst_rate)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid GST rate")
+
+    due_date_obj = None
+    if due_date:
+        due_date = due_date.strip()
+        if due_date:
+            due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
+
     form_data = InvoiceForm(
         invoice_date=datetime.strptime(invoice_date, "%Y-%m-%d").date(),
-        due_date=datetime.strptime(due_date, "%Y-%m-%d").date(),
+        due_date=due_date_obj,
         customer_info=CustomerInfo(
             name=customer_name,
             address_line1=address_line1,
             address_line2=address_line2 or "",
             city_country=city_country,
+            gst_number=customer_gst_number,
         ),
         company_info=CompanyInfo(
             name=company_name,
@@ -79,6 +97,7 @@ async def get_invoice(
             address_line1=company_address_line1,
             address_line2=company_address_line2 or "",
             city_country=company_city_country,
+            gst_number=company_gst_number,
         ),
         bank_details=BankDetails(
             beneficiary_bank=bank_name,
@@ -87,10 +106,12 @@ async def get_invoice(
             account_number=account_number,
             bank_address=bank_address,
         ),
-        currency=currency,  # Add this line
+        currency=currency,
         second_currency=second_currency,
         exchange_rate=exchange_rate_float,
-        additional_notes=additional_notes,  # Add this line
+        additional_notes=additional_notes,
+        invoice_type=invoice_type,
+        gst_rate=gst_rate_float,
     )
 
     invoice_items = []
@@ -110,7 +131,7 @@ async def get_invoice(
         items=invoice_items,
         invoice_number=datetime.now().strftime("%Y%m%d%H%M%S"),
         total=total,
-        currency=currency,  # Add this line
+        currency=currency,
         second_currency=second_currency,
         second_currency_total=second_currency_total,
     )

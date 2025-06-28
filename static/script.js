@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupInfoToggle();
     setupEventListeners();
     ensureExchangeRateVisibility(); // Add this line
+    setupInvoiceTypeToggle(); // 新增
 });
 
 function updateSummaries() {
@@ -37,6 +38,7 @@ function showPopup(formId) {
                 <input type="text" name="address_line1" placeholder="Address Line 1" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('address_line1').value}">
                 <input type="text" name="address_line2" placeholder="Address Line 2" class="w-full px-3 py-2 border rounded mb-2" value="${document.getElementById('address_line2').value}">
                 <input type="text" name="city_country" placeholder="City, Country" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('city_country').value}">
+                <input type="text" name="customer_gst_number" placeholder="Customer GST Registration Number" class="w-full px-3 py-2 border rounded mb-2" value="${document.getElementById('customer_gst_number').value}">
                 <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">Save</button>
             </form>
         `;
@@ -52,10 +54,11 @@ function showPopup(formId) {
             </div>
             <form id="company-form">
                 <input type="text" name="company_name" placeholder="Company Name" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_name').value}">
-                <input type="text" name="company_tagline" placeholder="Company Tagline" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_tagline').value}">
+                <input type="text" name="company_tagline" placeholder="Company Tagline" class="w-full px-3 py-2 border rounded mb-2" value="${document.getElementById('company_tagline').value}">
                 <input type="text" name="company_address_line1" placeholder="Address Line 1" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_address_line1').value}">
                 <input type="text" name="company_address_line2" placeholder="Address Line 2" class="w-full px-3 py-2 border rounded mb-2" value="${document.getElementById('company_address_line2').value}">
                 <input type="text" name="company_city_country" placeholder="City, Country" class="w-full px-3 py-2 border rounded mb-2" required value="${document.getElementById('company_city_country').value}">
+                <input type="text" name="company_gst_number" placeholder="Company GST Registration Number" class="w-full px-3 py-2 border rounded mb-2" value="${document.getElementById('company_gst_number').value}">
                 <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">Save</button>
             </form>
         `;
@@ -109,26 +112,40 @@ function closePopup() {
 function renderInvoiceItems() {
     const container = document.getElementById('invoice-items-container');
     container.innerHTML = '';
+    const invoiceType = document.getElementById('invoice_type').value;
     invoiceItems.forEach((item, index) => {
         const itemElement = document.createElement('div');
         itemElement.className = 'mb-2 p-2 border rounded';
-        itemElement.innerHTML = `
+        let html = `
             <input type="text" name="item_${index}" placeholder="Item" class="w-full px-3 py-2 border rounded mb-1" required value="${item.item}" onchange="updateInvoiceItem(${index}, 'item', this.value)">
             <input type="number" name="amount_${index}" placeholder="Amount" class="w-full px-3 py-2 border rounded mb-1" required value="${item.amount}" onchange="updateInvoiceItem(${index}, 'amount', this.value)">
-            <input type="text" name="comments_${index}" placeholder="Comments" class="w-full px-3 py-2 border rounded mb-1" value="${item.comments}" onchange="updateInvoiceItem(${index}, 'comments', this.value)">
-            <button type="button" class="mt-1 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300" onclick="removeInvoiceItem(${index})">
-                Remove
-            </button>
+            <input type="text" name="comments_${index}" placeholder="Comments" class="w-full px-3 py-2 border rounded mb-1" value="${item.comments || ''}" onchange="updateInvoiceItem(${index}, 'comments', this.value)">
         `;
+        if (invoiceType === 'gst') {
+            html += `
+                <input type="date" name="payment_date_${index}" placeholder="Payment Date" class="w-full px-3 py-2 border rounded mb-1" value="${item.payment_date || ''}" onchange="updateInvoiceItem(${index}, 'payment_date', this.value)">
+                <input type="text" name="payment_number_${index}" placeholder="Payment Number" class="w-full px-3 py-2 border rounded mb-1" value="${item.payment_number || ''}" onchange="updateInvoiceItem(${index}, 'payment_number', this.value)">
+            `;
+        }
+        html += `<button type="button" class="mt-1 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300" onclick="removeInvoiceItem(${index})">
+                Remove
+            </button>`;
+        itemElement.innerHTML = html;
         container.appendChild(itemElement);
     });
     updateInvoiceItemsInput();
 }
 
 function addInvoiceItem() {
-    invoiceItems.push({ item: '', amount: 0, comments: '' });
+    const invoiceType = document.getElementById('invoice_type').value;
+    const newItem = { item: '', amount: 0, comments: '' };
+    if (invoiceType === 'gst') {
+        newItem.payment_date = '';
+        newItem.payment_number = '';
+    }
+    invoiceItems.push(newItem);
     renderInvoiceItems();
-    updateInvoicePreview(); // Add this line to update the preview when an item is added
+    updateInvoicePreview();
     saveToLocalStorage();
 }
 
@@ -158,7 +175,7 @@ function updateSecondCurrencyAmount(index) {
 function removeInvoiceItem(index) {
     invoiceItems.splice(index, 1);
     renderInvoiceItems();
-    updateInvoicePreview(); // Add this line to update the preview when an item is removed
+    updateInvoicePreview();
     saveToLocalStorage();
 }
 
@@ -170,7 +187,9 @@ function saveToLocalStorage() {
     const formData = new FormData(document.getElementById('invoice-form'));
     const data = Object.fromEntries(formData.entries());
     data.invoiceItems = invoiceItems;
-    data.additional_notes = document.getElementById('additional_notes').value;  // Add this line
+    data.additional_notes = document.getElementById('additional_notes').value;
+    data.company_gst_number = document.getElementById('company_gst_number').value;
+    data.customer_gst_number = document.getElementById('customer_gst_number').value;
     localStorage.setItem('invoiceData', JSON.stringify(data));
 }
 
@@ -187,9 +206,9 @@ function loadFromLocalStorage() {
         invoiceItems = data.invoiceItems || [];
         updateInvoiceItemsInput();
         ensureExchangeRateVisibility();
-        
-        // Add this line to load additional notes
         document.getElementById('additional_notes').value = data.additional_notes || '';
+        if (data.company_gst_number !== undefined) document.getElementById('company_gst_number').value = data.company_gst_number;
+        if (data.customer_gst_number !== undefined) document.getElementById('customer_gst_number').value = data.customer_gst_number;
     }
 }
 
@@ -502,5 +521,29 @@ function ensureExchangeRateVisibility() {
     if (secondCurrencySelect.value) {
         exchangeRateContainer.classList.remove('hidden');
         exchangeRateInput.required = true;
+    }
+}
+
+function setupInvoiceTypeToggle() {
+    const invoiceTypeSelect = document.getElementById('invoice_type');
+    const gstNumberContainer = document.getElementById('gst_number_container');
+    const gstRateContainer = document.getElementById('gst_rate_container');
+    invoiceTypeSelect.addEventListener('change', function() {
+        if (invoiceTypeSelect.value === 'gst') {
+            gstNumberContainer.style.display = '';
+            gstRateContainer.style.display = '';
+        } else {
+            gstNumberContainer.style.display = 'none';
+            gstRateContainer.style.display = 'none';
+        }
+        renderInvoiceItems(); // 切换时刷新条目输入
+    });
+    // 初始化时根据当前值显示/隐藏
+    if (invoiceTypeSelect.value === 'gst') {
+        gstNumberContainer.style.display = '';
+        gstRateContainer.style.display = '';
+    } else {
+        gstNumberContainer.style.display = 'none';
+        gstRateContainer.style.display = 'none';
     }
 }
